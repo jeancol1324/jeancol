@@ -24,8 +24,8 @@ createRoot(document.getElementById('root')!).render(
             <LoadingProvider>
               <CartProvider>
                 <ToastProvider>
-                  <CategoryProvider>
-                    <ProductProvider>
+                  <ProductProvider>
+                    <CategoryProvider>
                       <OrderProvider>
                         <ReviewProvider>
                           <CouponProvider>
@@ -33,8 +33,8 @@ createRoot(document.getElementById('root')!).render(
                           </CouponProvider>
                         </ReviewProvider>
                       </OrderProvider>
-                    </ProductProvider>
-                  </CategoryProvider>
+                    </CategoryProvider>
+                  </ProductProvider>
                 </ToastProvider>
               </CartProvider>
             </LoadingProvider>
