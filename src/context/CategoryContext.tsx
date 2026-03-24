@@ -29,11 +29,14 @@ export const CategoryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     const fetchCategories = async () => {
       try {
+        console.log('Fetching categories from Supabase...');
         const { data, error } = await supabase
           .from('categories')
           .select('*')
           .order('name');
 
+        console.log('Categories response:', { data, error });
+        
         if (error) throw error;
         if (data && data.length > 0) {
           const categoriesWithCount = data.map(cat => ({

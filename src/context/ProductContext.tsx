@@ -23,11 +23,14 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     const fetchProducts = async () => {
       try {
+        console.log('Fetching products from Supabase...');
         const { data, error } = await supabase
           .from('products')
           .select('*')
           .order('created_at', { ascending: false });
 
+        console.log('Products response:', { data, error });
+        
         if (error) throw error;
         if (data && data.length > 0) {
           setProducts(data.map(p => ({
