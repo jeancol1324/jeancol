@@ -52,45 +52,74 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const initAuth = async () => {
       try {
+        // Wait a bit for session to restore
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+        
         setSession(session);
         
         if (session?.user) {
           setUser(session.user);
-          // Check admin status
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('is_admin')
-            .eq('id', session.user.id)
-            .maybeSingle();
+          
+          // Check admin status with retry logic
+          let adminStatus = false;
+          for (let i = 0; i < 3; i++) {
+            try {
+              const { data, error } = await supabase
+                .from('profiles')
+                .select('is_admin')
+                .eq('id', session.user.id)
+                .maybeSingle();
 
-          if (!error && data) {
-            setIsAdmin(data.is_admin || false);
-          } else if (!error) {
-            // Profile doesn't exist, create it as admin
-            await supabase.from('profiles').insert({
-              id: session.user.id,
-              email: session.user.email,
-              full_name: session.user.user_metadata?.full_name || 'Admin',
-              is_admin: true
-            });
-            setIsAdmin(true);
+              if (!isMounted) return;
+              
+              if (!error && data) {
+                adminStatus = data.is_admin || false;
+                break;
+              } else if (!error) {
+                // Profile doesn't exist, create it as admin
+                await supabase.from('profiles').insert({
+                  id: session.user.id,
+                  email: session.user.email,
+                  full_name: session.user.user_metadata?.full_name || 'Admin',
+                  is_admin: true
+                });
+                adminStatus = true;
+                break;
+              }
+            } catch (e) {
+              console.error('Profile fetch attempt', i + 1, 'failed');
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
+          }
+          
+          if (isMounted) {
+            setIsAdmin(adminStatus);
           }
         }
       } catch (err) {
         console.error('Auth init error:', err);
       } finally {
-        setIsLoading(false);
-        setIsInitialized(true);
+        if (isMounted) {
+          setIsLoading(false);
+          setIsInitialized(true);
+        }
       }
     };
 
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        if (!isMounted) return;
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -104,7 +133,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!error && data) {
             setIsAdmin(data.is_admin || false);
           } else if (!error) {
-            // Profile doesn't exist, create it as admin
             await supabase.from('profiles').insert({
               id: session.user.id,
               email: session.user.email,
@@ -112,8 +140,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               is_admin: true
             });
             setIsAdmin(true);
-          } else {
-            setIsAdmin(false);
           }
         } else {
           setIsAdmin(false);
@@ -121,7 +147,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
