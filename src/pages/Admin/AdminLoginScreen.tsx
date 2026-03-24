@@ -7,7 +7,7 @@ import { supabaseAdmin } from '../../lib/supabase';
 
 export const AdminLoginScreen = () => {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, checkAdminStatus } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +28,13 @@ export const AdminLoginScreen = () => {
       setError(result.error);
       setIsLoading(false);
     } else {
-      navigate('/admin');
+      const adminStatus = await checkAdminStatus();
+      if (adminStatus) {
+        navigate('/admin');
+      } else {
+        setError('Este usuario no tiene permisos de administrador.');
+        setIsLoading(false);
+      }
     }
   };
 
@@ -39,7 +45,7 @@ export const AdminLoginScreen = () => {
     setIsLoading(true);
 
     try {
-      const { data, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
+      const { data: authData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
         email: email,
         password: password,
         email_confirm: true,
@@ -50,16 +56,19 @@ export const AdminLoginScreen = () => {
 
       if (signUpError) throw signUpError;
 
-      if (data.user) {
+      if (authData.user) {
         const { error: profileError } = await supabaseAdmin
           .from('profiles')
-          .update({ 
+          .upsert({ 
+            id: authData.user.id,
+            email: email,
             full_name: fullName,
             is_admin: true 
-          })
-          .eq('id', data.user.id);
+          }, { onConflict: 'id' });
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error('Profile error:', profileError);
+        }
 
         setSuccess('¡Usuario admin creado exitosamente! Ahora puedes iniciar sesión.');
         setIsLogin(true);
