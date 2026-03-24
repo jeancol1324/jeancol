@@ -140,3 +140,8 @@ export const useCategories = () => {
   }
   return context;
 };
+
+export const useCategoryCount = (categoryName: string) => {
+  const { products } = useProducts();
+  return products.filter(p => p.category.toLowerCase() === categoryName.toLowerCase()).length;
+};
