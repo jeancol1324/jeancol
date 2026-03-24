@@ -57,22 +57,50 @@ export const AdminLoginScreen = () => {
       if (signUpError) throw signUpError;
 
       if (authData.user) {
-        const { error: profileError } = await supabaseAdmin
+        // Primero verificar si ya existe el perfil
+        const { data: existingProfile } = await supabaseAdmin
           .from('profiles')
-          .upsert({ 
-            id: authData.user.id,
-            email: email,
-            full_name: fullName,
-            is_admin: true 
-          }, { onConflict: 'id' });
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
 
-        if (profileError) {
-          console.error('Profile error:', profileError);
+        if (existingProfile) {
+          // Actualizar si existe
+          await supabaseAdmin
+            .from('profiles')
+            .update({ 
+              full_name: fullName,
+              is_admin: true,
+              email: email
+            })
+            .eq('id', authData.user.id);
+        } else {
+          // Crear nuevo perfil
+          const { error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .insert({ 
+              id: authData.user.id,
+              email: email,
+              full_name: fullName,
+              is_admin: true 
+            });
+
+          if (profileError) {
+            console.error('Profile insert error:', profileError);
+            throw profileError;
+          }
         }
 
-        setSuccess('¡Usuario admin creado exitosamente! Ahora puedes iniciar sesión.');
-        setIsLogin(true);
-        setPassword('');
+        // Auto login después de crear admin
+        const loginResult = await signIn(email, password);
+        
+        if (loginResult.error) {
+          setSuccess('¡Usuario admin creado! Por favor inicia sesión.');
+          setIsLogin(true);
+          setPassword('');
+        } else {
+          navigate('/admin');
+        }
       }
     } catch (err: any) {
       console.error('Sign up error:', err);

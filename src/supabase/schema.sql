@@ -331,6 +331,17 @@ CREATE POLICY "Admin can manage settings" ON settings FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
 );
 
+-- Profiles: permitir lectura pública, insert y update
+DROP POLICY IF EXISTS "Allow public read profiles" ON profiles;
+DROP POLICY IF EXISTS "Allow authenticated insert profiles" ON profiles;
+DROP POLICY IF EXISTS "Allow authenticated update profiles" ON profiles;
+DROP POLICY IF EXISTS "Admin can manage profiles" ON profiles;
+
+CREATE POLICY "Allow public read profiles" ON profiles FOR SELECT USING (true);
+CREATE POLICY "Allow authenticated insert profiles" ON profiles FOR INSERT WITH CHECK (auth.uid() = id OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
+CREATE POLICY "Allow authenticated update profiles" ON profiles FOR UPDATE USING (auth.uid() = id OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
+CREATE POLICY "Admin can manage profiles" ON profiles FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
+
 -- ============================================
 -- FUNCIÓN PARA CREAR PROFILE AL REGISTRARSE
 -- ============================================
