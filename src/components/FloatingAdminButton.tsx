@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, LogOut } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,11 +7,19 @@ import { useAuth } from '../context/AuthContext';
 export const FloatingAdminButton = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAdmin, user, signOut } = useAuth();
-  const [showMenu, setShowMenu] = React.useState(false);
+  const { isAdmin, user, signOut, isLoading } = useAuth();
+  const [showMenu, setShowMenu] = useState(false);
   const isAdminMode = location.pathname.startsWith('/admin');
 
-  if (!isAdmin || isAdminMode) {
+  useEffect(() => {
+    console.log('FloatingAdminButton - isAdmin:', isAdmin, 'user:', !!user, 'isLoading:', isLoading);
+  }, [isAdmin, user, isLoading]);
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (!user || isAdminMode) {
     return null;
   }
 
