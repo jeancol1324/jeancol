@@ -26,34 +26,51 @@ export const CategoryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [loading, setLoading] = useState(true);
   const { products } = useProducts();
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('categories')
-          .select('*')
-          .order('name');
+  const fetchCategories = async () => {
+    try {
+      console.log('DEBUG: Iniciando fetch de categorías...');
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
 
-        if (error) throw error;
-        
-        if (!data || data.length === 0) {
-          setCategories([]);
-        } else {
-          const categoriesWithCount = data.map(cat => ({
-            ...cat,
-            count: products.filter(p => p.category.toLowerCase() === cat.name.toLowerCase()).length
-          }));
-          setCategories(categoriesWithCount);
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-        setCategories([]);
-      } finally {
-        setLoading(false);
+      if (error) {
+        console.error('DEBUG: Error en supabase fetch categories:', error);
+        throw error;
       }
-    };
+      
+      console.log('DEBUG: Datos recibidos de categorías:', data);
+      
+      if (!data || data.length === 0) {
+        setCategories([]);
+      } else {
+        const categoriesWithCount = data.map(cat => ({
+          ...cat,
+          count: products ? products.filter(p => p.category?.toLowerCase() === cat.name?.toLowerCase()).length : 0
+        }));
+        setCategories(categoriesWithCount);
+      }
+    } catch (error) {
+      console.error('DEBUG: Error general en fetchCategories:', error);
+      setCategories([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchCategories();
+  }, []); // Carga inicial independiente de productos
+
+  // Actualizar el conteo cuando los productos cambien
+  useEffect(() => {
+    if (products.length > 0 && categories.length > 0) {
+      console.log('DEBUG: Recalculando conteo de categorías con productos...');
+      setCategories(prev => prev.map(cat => ({
+        ...cat,
+        count: products.filter(p => p.category?.toLowerCase() === cat.name?.toLowerCase()).length
+      })));
+    }
   }, [products]);
 
   const addCategory = async (category: Omit<Category, 'id'>) => {
@@ -107,7 +124,7 @@ export const CategoryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const getCategoryById = (id: string) => categories.find(cat => cat.id === id);
 
   const getCategoryByName = (name: string) => 
-    categories.find(cat => cat.name.toLowerCase() === name.toLowerCase());
+    categories.find(cat => cat.name?.toLowerCase() === name?.toLowerCase());
 
   return (
     <CategoryContext.Provider value={{ categories, loading, addCategory, updateCategory, deleteCategory, getCategoryById, getCategoryByName }}>
@@ -122,9 +139,4 @@ export const useCategories = () => {
     throw new Error('useCategories must be used within a CategoryProvider');
   }
   return context;
-};
-
-export const useCategoryCount = (categoryName: string) => {
-  const { products } = useProducts();
-  return products.filter(p => p.category.toLowerCase() === categoryName.toLowerCase()).length;
 };
