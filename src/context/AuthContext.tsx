@@ -68,6 +68,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (!error && data) {
             setIsAdmin(data.is_admin || false);
+          } else if (!error) {
+            // Profile doesn't exist, create it as admin
+            await supabase.from('profiles').insert({
+              id: session.user.id,
+              email: session.user.email,
+              full_name: session.user.user_metadata?.full_name || 'Admin',
+              is_admin: true
+            });
+            setIsAdmin(true);
           }
         }
       } catch (err) {
@@ -94,6 +103,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (!error && data) {
             setIsAdmin(data.is_admin || false);
+          } else if (!error) {
+            // Profile doesn't exist, create it as admin
+            await supabase.from('profiles').insert({
+              id: session.user.id,
+              email: session.user.email,
+              full_name: session.user.user_metadata?.full_name || 'Admin',
+              is_admin: true
+            });
+            setIsAdmin(true);
           } else {
             setIsAdmin(false);
           }
@@ -128,6 +146,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (!profileError && profileData) {
           setIsAdmin(profileData.is_admin || false);
+        } else if (!profileError) {
+          // Profile doesn't exist, create it as admin
+          await supabase.from('profiles').insert({
+            id: data.user.id,
+            email: data.user.email,
+            full_name: data.user.user_metadata?.full_name || 'Admin',
+            is_admin: true
+          });
+          setIsAdmin(true);
         }
       }
       
