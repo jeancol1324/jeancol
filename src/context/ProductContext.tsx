@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product } from '../types';
-import { supabase, supabaseAdmin } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 interface ProductContextType {
   products: Product[];
@@ -23,16 +23,14 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        console.log('Fetching products from Supabase...');
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
           .from('products')
           .select('*')
           .order('created_at', { ascending: false });
 
-        console.log('Products response:', { data, error });
+        if (error) throw error;
         
-        if (error || !data || data.length === 0) {
-          console.log('No products found in database');
+        if (!data || data.length === 0) {
           setProducts([]);
         } else {
           setProducts(data.map(p => ({
@@ -56,18 +54,14 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const addProduct = async (product: Omit<Product, 'id'>) => {
     try {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('products')
         .insert([product])
         .select()
         .single();
 
-      console.log('Add product result:', { data, error });
+      if (error) throw error;
       
-      if (error) {
-        alert('Error al guardar producto: ' + error.message);
-        throw error;
-      }
       if (data) {
         setProducts(prev => [data, ...prev]);
       }
@@ -79,17 +73,13 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('products')
         .update(updates)
         .eq('id', id);
 
-      console.log('Update product result:', { error });
+      if (error) throw error;
       
-      if (error) {
-        alert('Error al actualizar producto: ' + error.message);
-        throw error;
-      }
       setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
     } catch (error: any) {
       console.error('Error updating product:', error);
@@ -99,17 +89,13 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteProduct = async (id: string) => {
     try {
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('products')
         .delete()
         .eq('id', id);
 
-      console.log('Delete product result:', { error });
+      if (error) throw error;
       
-      if (error) {
-        alert('Error al eliminar producto: ' + error.message);
-        throw error;
-      }
       setProducts(prev => prev.filter(p => p.id !== id));
     } catch (error: any) {
       console.error('Error deleting product:', error);

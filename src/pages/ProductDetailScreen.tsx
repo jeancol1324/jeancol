@@ -12,8 +12,8 @@ import { CustomerReviewModal } from '../components/CustomerReviewModal';
 export const ProductDetailScreen = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { products } = useProducts();
-  const product = products.find(p => p.id === id) || products[0];
+  const { products, loading } = useProducts();
+  const product = products.find(p => p.id === id);
   const { getReviewsByProduct } = useReviews();
   
   const [activeImage, setActiveImage] = useState(0);
@@ -23,6 +23,29 @@ export const ProductDetailScreen = () => {
   const [scrolled, setScrolled] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   
+  // Wait for loading or redirect if not found
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-zinc-950">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-zinc-950 p-4 text-center">
+        <h2 className="text-2xl font-bold mb-4 dark:text-white">Producto no encontrado</h2>
+        <button 
+          onClick={() => navigate('/products')}
+          className="px-6 py-2 bg-primary text-white rounded-lg font-bold"
+        >
+          Ver todos los productos
+        </button>
+      </div>
+    );
+  }
+
   const reviews = getReviewsByProduct(product.id);
   
   const activeVariations = product.variations?.filter(v => v.isActive) || [];

@@ -4,5 +4,3 @@ const supabaseUrl = 'https://lywpvjvqbeqtgswubhcv.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3B2anZxYmVxdGdzd3ViaGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDMxMTcsImV4cCI6MjA4OTg3OTExN30.D78i-7ZFZe3QbLjUKqwTQOEFHbZXdsLWZ5IvjgJUCLQ';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-export const supabaseAdmin = createClient(supabaseUrl, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5d3B2anZxYmVxdGdzd3ViaGN2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDMwMzExNywiZXhwIjoyMDg5ODc5MTE3fQ.d3Uz4PcCvZ0j-byhMUUsTGzDmr2qXjfC2SffzRydJz8');

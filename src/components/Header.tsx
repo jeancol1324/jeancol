@@ -9,13 +9,8 @@ import {
   X, 
   TrendingUp, 
   Clock, 
-  ChevronDown,
   ArrowRight,
   Sparkles,
-  Zap,
-  Package,
-  Heart,
-  Scan
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -29,31 +24,18 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   ShoppingCart,
   ShoppingBag,
   Search,
-  Scan,
   Moon,
   Sun,
 };
 
-const getHeaderIcons = () => {
-  const saved = localStorage.getItem('headerIcons');
-  return saved ? JSON.parse(saved) : {
-    cartIcon: 'ShoppingCart',
-    searchIcon: 'Search',
-    themeIcon: 'Moon',
-  };
-};
-
-const getCustomIcons = () => {
-  const saved = localStorage.getItem('customIcons');
-  return saved ? JSON.parse(saved) : {};
-};
-
 export const Header = () => {
   const { theme, toggleTheme } = useTheme();
-  const { totalItems, freeShippingProgress, remainingForFreeShipping } = useCart();
+  const { totalItems, freeShippingProgress } = useCart();
   const { products } = useProducts();
-  const { getLogo } = useStore();
+  const { getLogo, settings } = useStore();
   const location = useLocation();
+  const navigate = useNavigate();
+  
   const formatCOP = (amount: number) => amount.toLocaleString('es-CO');
   
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -61,24 +43,9 @@ export const Header = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [headerIcons, setHeaderIcons] = useState(getHeaderIcons);
-  const [customIcons, setCustomIcons] = useState(getCustomIcons);
-  const [headerConfig, setHeaderConfig] = useState<Record<string, boolean>>(() => {
-    const saved = localStorage.getItem('headerConfig');
-    return saved ? JSON.parse(saved) : { 
-      showSearch: true, 
-      showTheme: true, 
-      showCart: true,
-      showHome: true,
-      showCategories: true,
-      showOffers: true 
-    };
-  });
   
   const searchInputRef = useRef<HTMLInputElement>(null);
-
   const activeScreen = location.pathname === '/' ? 'home' : location.pathname.slice(1);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -86,23 +53,6 @@ export const Header = () => {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const handleIconsChange = () => {
-      setHeaderIcons(getHeaderIcons());
-      setCustomIcons(getCustomIcons());
-      const saved = localStorage.getItem('headerConfig');
-      setHeaderConfig(saved ? JSON.parse(saved) : { showSearch: true, showTheme: true, showCart: true });
-    };
-    window.addEventListener('headerIconsUpdated', handleIconsChange);
-    window.addEventListener('headerConfigUpdated', handleIconsChange);
-    window.addEventListener('storage', handleIconsChange);
-    return () => {
-      window.removeEventListener('headerIconsUpdated', handleIconsChange);
-      window.removeEventListener('headerConfigUpdated', handleIconsChange);
-      window.removeEventListener('storage', handleIconsChange);
-    };
   }, []);
 
   useEffect(() => {
@@ -123,12 +73,6 @@ export const Header = () => {
     }
   }, [searchQuery, products]);
 
-  const handleSearchItemClick = (productId: string) => {
-    setIsSearchOpen(false);
-    setSearchQuery('');
-    // Navigation is handled by Link component
-  };
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === '/' && !isSearchOpen) {
@@ -144,9 +88,9 @@ export const Header = () => {
   }, [isSearchOpen]);
 
   const navItems = [
-    ...(headerConfig.showHome !== false ? [{ id: 'home', label: 'Inicio', path: '/' }] : []),
-    ...(headerConfig.showCategories !== false ? [{ id: 'categories', label: 'Categorías', path: '/categories' }] : []),
-    ...(headerConfig.showOffers !== false ? [{ id: 'offers', label: 'Ofertas', path: '/offers' }] : [])
+    { id: 'home', label: 'Inicio', path: '/' },
+    { id: 'categories', label: 'Categorías', path: '/categories' },
+    { id: 'offers', label: 'Ofertas', path: '/offers' }
   ];
 
   const isActive = (item: typeof navItems[0]) => {
@@ -191,7 +135,9 @@ export const Header = () => {
               <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 shrink-0">
                 <img src={getLogo()} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
               </div>
-              <span className="text-xl lg:text-2xl font-black tracking-tighter uppercase italic bg-gradient-to-r from-primary via-orange-500 to-amber-500 bg-clip-text text-transparent group-hover:brightness-110 transition-all duration-300 dark:from-orange-300 dark:via-amber-300 dark:to-yellow-400">JEAN COL</span>
+              <span className="text-xl lg:text-2xl font-black tracking-tighter uppercase italic bg-gradient-to-r from-primary via-orange-500 to-amber-500 bg-clip-text text-transparent group-hover:brightness-110 transition-all duration-300 dark:from-orange-300 dark:via-amber-300 dark:to-yellow-400">
+                {settings.name}
+              </span>
             </Link>
             
             <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
@@ -217,35 +163,22 @@ export const Header = () => {
 
           <div className="flex items-center gap-2 lg:gap-4 xl:gap-6">
             <div className="hidden lg:flex items-center gap-2 xl:gap-4">
-              {headerConfig.showSearch && (
-                <button 
-                  onClick={() => navigate('/products')}
-                  className="w-10 h-10 xl:w-12 xl:h-12 rounded-full flex items-center justify-center text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all group relative"
-                >
-                  {headerIcons.searchIcon?.startsWith('custom_') ? (
-                    <img src={customIcons.searchIcon} alt="Search" className="w-5 h-5 xl:w-6 xl:h-6 object-contain" />
-                  ) : (
-                    React.createElement(ICON_MAP[headerIcons.searchIcon] || Search, { className: "w-5 h-5 xl:w-6 xl:h-6" })
-                  )}
-                  <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[8px] font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap pointer-events-none translate-y-2 group-hover:translate-y-0">Buscar /</span>
-                </button>
-              )}
+              <button 
+                onClick={() => navigate('/products')}
+                className="w-10 h-10 xl:w-12 xl:h-12 rounded-full flex items-center justify-center text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all group relative"
+              >
+                <Search className="w-5 h-5 xl:w-6 xl:h-6" />
+                <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[8px] font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap pointer-events-none translate-y-2 group-hover:translate-y-0">Buscar /</span>
+              </button>
 
-              {headerConfig.showTheme && (
-                <button 
-                  onClick={toggleTheme}
-                  className="w-10 h-10 xl:w-12 xl:h-12 rounded-full flex items-center justify-center text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all"
-                >
-                  {headerIcons.themeIcon?.startsWith('custom_') ? (
-                    <img src={customIcons.themeIcon} alt="Theme" className="w-5 h-5 object-contain" />
-                  ) : (
-                    React.createElement(ICON_MAP[headerIcons.themeIcon] || Moon, { className: "w-5 h-5" })
-                  )}
-                </button>
-              )}
+              <button 
+                onClick={toggleTheme}
+                className="w-10 h-10 xl:w-12 xl:h-12 rounded-full flex items-center justify-center text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all"
+              >
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
             </div>
 
-            {headerConfig.showCart && (
             <Link 
               to="/cart"
               onClick={(e) => {
@@ -258,11 +191,7 @@ export const Header = () => {
                 animate={totalItems > 0 ? { scale: [1, 1.2, 1] } : {}}
                 transition={{ duration: 0.3 }}
               >
-                {headerIcons.cartIcon?.startsWith('custom_') ? (
-                  <img src={customIcons.cartIcon} alt="Cart" className="w-6 h-6 lg:w-7 lg:h-7 object-contain group-hover:rotate-12 transition-transform" />
-                ) : (
-                  React.createElement(ICON_MAP[headerIcons.cartIcon] || ShoppingCart, { className: "w-6 h-6 lg:w-7 lg:h-7 group-hover:rotate-12 transition-transform" })
-                )}
+                <ShoppingCart className="w-6 h-6 lg:w-7 lg:h-7 group-hover:rotate-12 transition-transform" />
               </motion.div>
               {totalItems > 0 && (
                 <span className="absolute -top-1 -right-1 w-6 h-6 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-950 shadow-lg animate-bounce-soft">
@@ -270,7 +199,6 @@ export const Header = () => {
                 </span>
               )}
             </Link>
-            )}
 
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -491,15 +419,13 @@ export const Header = () => {
                   onClick={toggleTheme}
                   className="flex-1 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-4 text-xs font-black uppercase tracking-widest text-zinc-900 dark:text-white"
                 >
-                  {headerIcons.themeIcon?.startsWith('custom_') ? (
-                    <img src={customIcons.themeIcon} alt="Theme" className="w-5 h-5 object-contain" />
-                  ) : (
-                    React.createElement(ICON_MAP[headerIcons.themeIcon] || Moon, { className: "w-5 h-5" })
-                  )}
+                  {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                   Modo {theme === 'light' ? 'Noche' : 'Día'}
                 </button>
               </div>
-              <p className="text-center text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">JEANCOL © 2024</p>
+              <p className="text-center text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">
+                {settings.name} © {new Date().getFullYear()}
+              </p>
             </div>
           </motion.div>
         )}
@@ -507,4 +433,3 @@ export const Header = () => {
     </>
   );
 };
-

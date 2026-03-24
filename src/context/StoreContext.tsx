@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getUserData, setUserData, getUserDataParsed } from '../lib/userData';
+import { supabase } from '../lib/supabase';
 
 interface StoreSettings {
   name: string;
@@ -28,11 +28,12 @@ interface StoreSettings {
 
 interface StoreContextType {
   settings: StoreSettings;
-  updateSettings: (newSettings: Partial<StoreSettings>) => void;
+  updateSettings: (newSettings: Partial<StoreSettings>) => Promise<void>;
   getLogo: () => string;
   getStoreName: () => string;
   isMaintenanceMode: () => boolean;
   getMaintenanceTimeLeft: () => { days: number; hours: number; minutes: number; seconds: number; total: number } | null;
+  loading: boolean;
 }
 
 const DEFAULT_SETTINGS: StoreSettings = {
@@ -71,15 +72,47 @@ export const useStore = () => {
 };
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<StoreSettings>(() => {
-    const saved = getUserDataParsed('storeSettings');
-    return saved || DEFAULT_SETTINGS;
-  });
+  const [settings, setSettings] = useState<StoreSettings>(DEFAULT_SETTINGS);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch settings from DB on mount
   useEffect(() => {
-    setUserData('storeSettings', settings);
-  }, [settings]);
+    const fetchSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('settings')
+          .select('value')
+          .eq('key', 'store')
+          .maybeSingle();
 
+        if (error) throw error;
+
+        if (data?.value) {
+          setSettings(prev => ({ ...prev, ...data.value }));
+        } else {
+          // If no settings exist in DB, create default
+          // This might fail if RLS prevents public insert, but admin should see this
+          // Ideally, this is done via seed script, but we can try
+          try {
+            await supabase.from('settings').insert({
+              key: 'store',
+              value: DEFAULT_SETTINGS
+            });
+          } catch (e) {
+            console.warn('Could not initialize settings in DB (expected if not admin)', e);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching store settings:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  // Sync maintenance timer locally
   useEffect(() => {
     if (settings.maintenanceMode && settings.maintenanceEndDate) {
       const checkMaintenanceEnd = () => {
@@ -87,6 +120,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const endTime = new Date(settings.maintenanceEndDate).getTime();
         if (now >= endTime) {
           setSettings(prev => ({ ...prev, maintenanceMode: false }));
+          // Optionally update DB here, but RLS might block if not admin
         }
       };
 
@@ -96,8 +130,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [settings.maintenanceMode, settings.maintenanceEndDate]);
 
-  const updateSettings = (newSettings: Partial<StoreSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
+  const updateSettings = async (newSettings: Partial<StoreSettings>) => {
+    try {
+      const updated = { ...settings, ...newSettings };
+      setSettings(updated); // Optimistic update
+
+      const { error } = await supabase
+        .from('settings')
+        .upsert({
+          key: 'store',
+          value: updated,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+
+      if (error) {
+        setSettings(settings); // Revert on error
+        throw error;
+      }
+    } catch (error: any) {
+      console.error('Error updating settings:', error);
+      alert('Error al guardar configuración: ' + error.message);
+    }
   };
 
   const getLogo = () => {
@@ -142,7 +195,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [settings.maintenanceEndDate]);
 
   return (
-    <StoreContext.Provider value={{ settings, updateSettings, getLogo, getStoreName, isMaintenanceMode, getMaintenanceTimeLeft }}>
+    <StoreContext.Provider value={{ settings, updateSettings, getLogo, getStoreName, isMaintenanceMode, getMaintenanceTimeLeft, loading }}>
       {children}
     </StoreContext.Provider>
   );

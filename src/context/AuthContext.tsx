@@ -20,7 +20,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   const checkAdminStatus = useCallback(async (): Promise<boolean> => {
     if (!user) {
@@ -36,51 +35,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (error) {
-        console.log('Profile error (expected if not exists):', error.message);
-        // If profile doesn't exist, create it
-        if (error.message.includes('404') || error.message.includes('NOT_FOUND')) {
-          try {
-            await supabase.from('profiles').insert({
-              id: user.id,
-              email: user.email,
-              full_name: user.user_metadata?.full_name || 'Admin',
-              is_admin: true
-            });
-            setIsAdmin(true);
-            return true;
-          } catch (insertErr) {
-            console.error('Error creating profile:', insertErr);
-          }
-        }
-        setIsAdmin(true); // Assume admin if we can't verify
-        return true;
+        console.error('Error verifying admin status:', error);
+        setIsAdmin(false);
+        return false;
       }
       
-      if (!data) {
-        // No profile, create one as admin
-        try {
-          await supabase.from('profiles').insert({
-            id: user.id,
-            email: user.email,
-            full_name: user.user_metadata?.full_name || 'Admin',
-            is_admin: true
-          });
-          setIsAdmin(true);
-          return true;
-        } catch (insertErr) {
-          console.error('Error creating profile:', insertErr);
-          setIsAdmin(true); // Assume admin
-          return true;
-        }
-      }
-      
-      const adminStatus = data?.is_admin || false;
+      const adminStatus = data?.is_admin === true;
       setIsAdmin(adminStatus);
       return adminStatus;
     } catch (err) {
-      console.error('Error checking admin status:', err);
-      setIsAdmin(true); // Assume admin on error
-      return true;
+      console.error('Error in checkAdminStatus:', err);
+      setIsAdmin(false);
+      return false;
     }
   }, [user]);
 
@@ -89,51 +55,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initAuth = async () => {
       try {
-        // Wait a bit for session to restore
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!isMounted) return;
         
         setSession(session);
+        setUser(session?.user ?? null);
         
         if (session?.user) {
-          setUser(session.user);
-          
-          // Check admin status - assume admin by default
-          let adminStatus = true;
           try {
-            const { data, error } = await supabase
+            const { data } = await supabase
               .from('profiles')
               .select('is_admin')
               .eq('id', session.user.id)
               .maybeSingle();
 
-            if (!isMounted) return;
-            
-            if (!error && data) {
-              adminStatus = data.is_admin || true;
-            } else if (!error && !data) {
-              // Create profile as admin
-              try {
-                await supabase.from('profiles').insert({
-                  id: session.user.id,
-                  email: session.user.email,
-                  full_name: session.user.user_metadata?.full_name || 'Admin',
-                  is_admin: true
-                });
-                adminStatus = true;
-              } catch (insertErr) {
-                console.log('Profile insert failed, assuming admin');
-              }
+            if (isMounted) {
+              setIsAdmin(data?.is_admin === true);
             }
           } catch (e) {
-            console.log('Profile fetch failed, assuming admin');
-          }
-          
-          if (isMounted) {
-            setIsAdmin(adminStatus);
+            console.error('Error fetching initial profile:', e);
+            if (isMounted) setIsAdmin(false);
           }
         }
       } catch (err) {
@@ -141,7 +83,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } finally {
         if (isMounted) {
           setIsLoading(false);
-          setIsInitialized(true);
         }
       }
     };
@@ -156,23 +97,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from('profiles')
             .select('is_admin')
             .eq('id', session.user.id)
             .maybeSingle();
 
-          if (!error && data) {
-            setIsAdmin(data.is_admin || false);
-          } else if (!error) {
-            await supabase.from('profiles').insert({
-              id: session.user.id,
-              email: session.user.email,
-              full_name: session.user.user_metadata?.full_name || 'Admin',
-              is_admin: true
-            });
-            setIsAdmin(true);
-          }
+          setIsAdmin(data?.is_admin === true);
         } else {
           setIsAdmin(false);
         }
@@ -195,28 +126,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       
       if (data.user) {
-        setUser(data.user);
-        setSession(data.session);
-        
-        // Check admin status after login
-        const { data: profileData, error: profileError } = await supabase
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('is_admin')
           .eq('id', data.user.id)
           .maybeSingle();
 
-        if (!profileError && profileData) {
-          setIsAdmin(profileData.is_admin || false);
-        } else if (!profileError) {
-          // Profile doesn't exist, create it as admin
-          await supabase.from('profiles').insert({
-            id: data.user.id,
-            email: data.user.email,
-            full_name: data.user.user_metadata?.full_name || 'Admin',
-            is_admin: true
-          });
-          setIsAdmin(true);
-        }
+        setIsAdmin(profileData?.is_admin === true);
       }
       
       return { error: null };
@@ -228,7 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName: string): Promise<{ error: string | null }> => {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
