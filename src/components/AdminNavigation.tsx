@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, Package, ShoppingBag, Bell, Settings, ArrowLeft, Palette, FolderTree, Star, Ticket, Home } from 'lucide-react';
+import { Layout, Package, ShoppingBag, Bell, Settings, ArrowLeft, Palette, FolderTree, Star, Ticket, Home, Store } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 
@@ -60,6 +60,17 @@ export const AdminNavigation = () => {
           ))}
         </nav>
         <div className={`pt-4 border-t ${isDark ? 'border-zinc-800' : 'border-zinc-100'}`}>
+          <button 
+            onClick={() => navigate('/')}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all mb-2 ${
+              isDark 
+                ? 'text-primary hover:bg-primary/10' 
+                : 'text-primary hover:bg-primary/5'
+            }`}
+          >
+            <Store className="w-4 h-4" />
+            Ver Tienda
+          </button>
           <Link 
             to="/admin/profile"
             className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all mb-2 ${
@@ -106,6 +117,15 @@ export const AdminNavigation = () => {
             <span className="text-[6px] font-black uppercase tracking-tighter leading-none">{item.label}</span>
           </Link>
         ))}
+        <button
+          onClick={() => navigate('/')}
+          className={`flex flex-col items-center gap-0.5 p-1 rounded-lg transition-all min-w-[48px] ${
+            isDark ? 'text-primary' : 'text-primary'
+          }`}
+        >
+          <Store className="w-3.5 h-3.5" />
+          <span className="text-[6px] font-black uppercase tracking-tighter leading-none">Tienda</span>
+        </button>
         <Link
           to="/admin/profile"
           className={`flex flex-col items-center gap-0.5 p-1 rounded-lg transition-all min-w-[48px] ${
