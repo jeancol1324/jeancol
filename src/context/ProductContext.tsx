@@ -18,7 +18,7 @@ interface ProductContextType {
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,9 +38,12 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
             colors: p.colors || {},
             variations: p.variations || [],
           })));
+        } else {
+          setProducts(INITIAL_PRODUCTS);
         }
       } catch (error) {
         console.error('Error fetching products:', error);
+        setProducts(INITIAL_PRODUCTS);
       } finally {
         setLoading(false);
       }

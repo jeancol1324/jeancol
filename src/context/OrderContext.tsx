@@ -30,7 +30,7 @@ interface OrderContextType {
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,9 +44,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (error) throw error;
         if (data && data.length > 0) {
           setOrders(data);
+        } else {
+          setOrders(INITIAL_ORDERS);
         }
       } catch (error) {
         console.error('Error fetching orders:', error);
+        setOrders(INITIAL_ORDERS);
       } finally {
         setLoading(false);
       }
