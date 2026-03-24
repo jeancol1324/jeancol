@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Order, OrderStatus } from '../types';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseAdmin } from '../lib/supabase';
 
 export type { Order, OrderStatus };
 
@@ -35,11 +35,13 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('orders')
           .select('*')
           .order('created_at', { ascending: false });
 
+        console.log('Orders response:', { data, error });
+        
         if (error) throw error;
         if (data && data.length > 0) {
           setOrders(data);
@@ -56,53 +58,67 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const addOrder = async (order: Omit<Order, 'id'>): Promise<string> => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('orders')
         .insert([order])
         .select()
         .single();
 
-      if (error) throw error;
+      console.log('Add order result:', { data, error });
+      
+      if (error) {
+        alert('Error al guardar pedido: ' + error.message);
+        throw error;
+      }
       if (data) {
         setOrders(prev => [data, ...prev]);
         return data.id;
       }
       return '';
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding order:', error);
-      const localOrder: Order = { ...order, id: Date.now().toString() };
-      setOrders(prev => [localOrder, ...prev]);
-      return localOrder.id;
+      alert('Error: ' + (error?.message || 'Error desconocido'));
+      return '';
     }
   };
 
   const updateOrder = async (id: string, updates: Partial<Order>) => {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('orders')
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', id);
 
-      if (error) throw error;
+      console.log('Update order result:', { error });
+      
+      if (error) {
+        alert('Error al actualizar pedido: ' + error.message);
+        throw error;
+      }
       setOrders(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating order:', error);
-      setOrders(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
+      alert('Error: ' + (error?.message || 'Error desconocido'));
     }
   };
 
   const deleteOrder = async (id: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('orders')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      console.log('Delete order result:', { error });
+      
+      if (error) {
+        alert('Error al eliminar pedido: ' + error.message);
+        throw error;
+      }
       setOrders(prev => prev.filter(o => o.id !== id));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting order:', error);
-      setOrders(prev => prev.filter(o => o.id !== id));
+      alert('Error: ' + (error?.message || 'Error desconocido'));
     }
   };
 

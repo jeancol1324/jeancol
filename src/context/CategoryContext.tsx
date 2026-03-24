@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useProducts } from './ProductContext';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseAdmin } from '../lib/supabase';
 
 export interface Category {
   id: string;
@@ -30,7 +30,7 @@ export const CategoryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const fetchCategories = async () => {
       try {
         console.log('Fetching categories from Supabase...');
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('categories')
           .select('*')
           .order('name');
@@ -66,50 +66,64 @@ export const CategoryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const addCategory = async (category: Omit<Category, 'id'>) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('categories')
         .insert([category])
         .select()
         .single();
 
-      if (error) throw error;
+      console.log('Add category result:', { data, error });
+      
+      if (error) {
+        alert('Error al guardar categoría: ' + error.message);
+        throw error;
+      }
       if (data) {
         setCategories(prev => [...prev, { ...data, count: 0 }]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding category:', error);
-      const localCategory: Category = { ...category, id: Date.now().toString(), count: 0 };
-      setCategories(prev => [...prev, localCategory]);
+      alert('Error: ' + (error?.message || 'Error desconocido'));
     }
   };
 
   const updateCategory = async (id: string, updates: Partial<Category>) => {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('categories')
         .update(updates)
         .eq('id', id);
 
-      if (error) throw error;
+      console.log('Update category result:', { error });
+      
+      if (error) {
+        alert('Error al actualizar categoría: ' + error.message);
+        throw error;
+      }
       setCategories(prev => prev.map(cat => cat.id === id ? { ...cat, ...updates } : cat));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating category:', error);
-      setCategories(prev => prev.map(cat => cat.id === id ? { ...cat, ...updates } : cat));
+      alert('Error: ' + (error?.message || 'Error desconocido'));
     }
   };
 
   const deleteCategory = async (id: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('categories')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      console.log('Delete category result:', { error });
+      
+      if (error) {
+        alert('Error al eliminar categoría: ' + error.message);
+        throw error;
+      }
       setCategories(prev => prev.filter(cat => cat.id !== id));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting category:', error);
-      setCategories(prev => prev.filter(cat => cat.id !== id));
+      alert('Error: ' + (error?.message || 'Error desconocido'));
     }
   };
 

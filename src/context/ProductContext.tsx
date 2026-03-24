@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product } from '../types';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseAdmin } from '../lib/supabase';
 
 interface ProductContextType {
   products: Product[];
@@ -24,7 +24,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const fetchProducts = async () => {
       try {
         console.log('Fetching products from Supabase...');
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
           .from('products')
           .select('*')
           .order('created_at', { ascending: false });
@@ -53,50 +53,64 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const addProduct = async (product: Omit<Product, 'id'>) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('products')
         .insert([product])
         .select()
         .single();
 
-      if (error) throw error;
+      console.log('Add product result:', { data, error });
+      
+      if (error) {
+        alert('Error al guardar producto: ' + error.message);
+        throw error;
+      }
       if (data) {
         setProducts(prev => [data, ...prev]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding product:', error);
-      const localProduct: Product = { ...product, id: Date.now().toString() };
-      setProducts(prev => [localProduct, ...prev]);
+      alert('Error: ' + (error?.message || 'Error desconocido'));
     }
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('products')
         .update(updates)
         .eq('id', id);
 
-      if (error) throw error;
+      console.log('Update product result:', { error });
+      
+      if (error) {
+        alert('Error al actualizar producto: ' + error.message);
+        throw error;
+      }
       setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating product:', error);
-      setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+      alert('Error: ' + (error?.message || 'Error desconocido'));
     }
   };
 
   const deleteProduct = async (id: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('products')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      console.log('Delete product result:', { error });
+      
+      if (error) {
+        alert('Error al eliminar producto: ' + error.message);
+        throw error;
+      }
       setProducts(prev => prev.filter(p => p.id !== id));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting product:', error);
-      setProducts(prev => prev.filter(p => p.id !== id));
+      alert('Error: ' + (error?.message || 'Error desconocido'));
     }
   };
 
