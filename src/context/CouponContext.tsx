@@ -1,61 +1,134 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Coupon } from '../types';
-import { getUserData, setUserData, getUserDataParsed } from '../lib/userData';
+import { supabase } from '../lib/supabase';
 
 interface CouponContextType {
   coupons: Coupon[];
-  addCoupon: (coupon: Omit<Coupon, 'id' | 'usedCount'>) => void;
-  updateCoupon: (id: string, coupon: Partial<Coupon>) => void;
-  deleteCoupon: (id: string) => void;
-  toggleCouponStatus: (id: string) => void;
+  loading: boolean;
+  addCoupon: (coupon: Omit<Coupon, 'id' | 'usedCount'>) => Promise<void>;
+  updateCoupon: (id: string, coupon: Partial<Coupon>) => Promise<void>;
+  deleteCoupon: (id: string) => Promise<void>;
+  toggleCouponStatus: (id: string) => Promise<void>;
   validateCoupon: (code: string, subtotal: number) => { valid: boolean; discount: number; message: string };
 }
 
 const CouponContext = createContext<CouponContextType | undefined>(undefined);
 
 export const CouponProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [coupons, setCoupons] = useState<Coupon[]>(() => {
-    return getUserDataParsed('coupons') || [];
-  });
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const saved = getUserDataParsed('coupons');
-    if (saved && saved.length > 0) {
-      setCoupons(saved);
-    } else {
-      const sampleCoupons: Coupon[] = [
-        { id: '1', code: 'BIENVENIDO10', type: 'percentage', value: 10, minPurchase: 50000, maxDiscount: 20000, maxUses: 100, usedCount: 15, validFrom: new Date().toISOString().split('T')[0], validUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], isActive: true, description: '10% de descuento' },
-        { id: '2', code: 'ENVIOGRATIS', type: 'fixed', value: 14500, minPurchase: 95000, maxUses: 50, usedCount: 8, validFrom: new Date().toISOString().split('T')[0], validUntil: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], isActive: true, description: 'Envío gratis' },
-        { id: '3', code: 'VERANO20', type: 'percentage', value: 20, minPurchase: 100000, maxDiscount: 50000, maxUses: 200, usedCount: 0, validFrom: new Date().toISOString().split('T')[0], validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], isActive: true, description: '20% de descuento' },
-      ];
-      setCoupons(sampleCoupons);
-      setUserData('coupons', sampleCoupons);
-    }
+    const fetchCoupons = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('coupons')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        
+        if (data) {
+          setCoupons(data.map(c => ({
+            ...c,
+            minPurchase: c.min_purchase,
+            maxDiscount: c.max_discount,
+            maxUses: c.max_uses,
+            usedCount: c.used_count,
+            validFrom: c.valid_from,
+            validUntil: c.valid_until,
+            isActive: c.is_active,
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching coupons:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCoupons();
   }, []);
 
-  const saveCoupons = (updated: Coupon[]) => {
-    setCoupons(updated);
-    setUserData('coupons', updated);
+  const addCoupon = async (couponData: Omit<Coupon, 'id' | 'usedCount'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('coupons')
+        .insert([{
+          code: couponData.code,
+          type: couponData.type,
+          value: couponData.value,
+          min_purchase: couponData.minPurchase,
+          max_discount: couponData.maxDiscount,
+          max_uses: couponData.maxUses,
+          valid_from: couponData.validFrom,
+          valid_until: couponData.validUntil,
+          is_active: couponData.isActive,
+          description: couponData.description,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        const newCoupon: Coupon = {
+          ...data,
+          minPurchase: data.min_purchase,
+          maxDiscount: data.max_discount,
+          maxUses: data.max_uses,
+          usedCount: data.used_count,
+          validFrom: data.valid_from,
+          validUntil: data.valid_until,
+          isActive: data.is_active,
+        };
+        setCoupons(prev => [...prev, newCoupon]);
+      }
+    } catch (error: any) {
+      console.error('Error adding coupon:', error);
+      alert('Error: ' + error.message);
+    }
   };
 
-  const addCoupon = (couponData: Omit<Coupon, 'id' | 'usedCount'>) => {
-    const newCoupon: Coupon = { ...couponData, id: Date.now().toString(), usedCount: 0 };
-    saveCoupons([...coupons, newCoupon]);
+  const updateCoupon = async (id: string, couponData: Partial<Coupon>) => {
+    try {
+      const { error } = await supabase
+        .from('coupons')
+        .update({
+          code: couponData.code,
+          type: couponData.type,
+          value: couponData.value,
+          min_purchase: couponData.minPurchase,
+          max_discount: couponData.maxDiscount,
+          max_uses: couponData.maxUses,
+          valid_from: couponData.validFrom,
+          valid_until: couponData.validUntil,
+          is_active: couponData.isActive,
+          description: couponData.description,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+      setCoupons(prev => prev.map(c => c.id === id ? { ...c, ...couponData } : c));
+    } catch (error: any) {
+      console.error('Error updating coupon:', error);
+    }
   };
 
-  const updateCoupon = (id: string, couponData: Partial<Coupon>) => {
-    const updated = coupons.map(c => c.id === id ? { ...c, ...couponData } : c);
-    saveCoupons(updated);
+  const deleteCoupon = async (id: string) => {
+    try {
+      const { error } = await supabase.from('coupons').delete().eq('id', id);
+      if (error) throw error;
+      setCoupons(prev => prev.filter(c => c.id !== id));
+    } catch (error: any) {
+      console.error('Error deleting coupon:', error);
+    }
   };
 
-  const deleteCoupon = (id: string) => {
-    const updated = coupons.filter(c => c.id !== id);
-    saveCoupons(updated);
-  };
-
-  const toggleCouponStatus = (id: string) => {
-    const updated = coupons.map(c => c.id === id ? { ...c, isActive: !c.isActive } : c);
-    saveCoupons(updated);
+  const toggleCouponStatus = async (id: string) => {
+    const coupon = coupons.find(c => c.id === id);
+    if (coupon) {
+      await updateCoupon(id, { isActive: !coupon.isActive });
+    }
   };
 
   const validateCoupon = (code: string, subtotal: number) => {
@@ -70,12 +143,7 @@ export const CouponProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     
     const now = new Date();
-    const from = new Date(coupon.validFrom);
     const until = new Date(coupon.validUntil);
-    
-    if (now < from) {
-      return { valid: false, discount: 0, message: 'Este cupón aún no está vigente' };
-    }
     
     if (now > until) {
       return { valid: false, discount: 0, message: 'Este cupón ha expirado' };
@@ -103,7 +171,7 @@ export const CouponProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   return (
-    <CouponContext.Provider value={{ coupons, addCoupon, updateCoupon, deleteCoupon, toggleCouponStatus, validateCoupon }}>
+    <CouponContext.Provider value={{ coupons, loading, addCoupon, updateCoupon, deleteCoupon, toggleCouponStatus, validateCoupon }}>
       {children}
     </CouponContext.Provider>
   );

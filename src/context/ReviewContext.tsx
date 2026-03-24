@@ -21,14 +21,8 @@ interface ReviewContextType {
 
 const ReviewContext = createContext<ReviewContextType | undefined>(undefined);
 
-const sampleReviews: Review[] = [
-  { id: '1', productId: '1', userName: 'María', userLastName: 'García', rating: 5, comment: 'Excelente producto, muy buena calidad.', date: '2024-01-15', images: [], videos: [], status: 'approved' },
-  { id: '2', productId: '1', userName: 'Carlos', userLastName: 'López', rating: 4, comment: 'Buen producto, llegó rápido.', date: '2024-01-14', images: [], videos: [], status: 'approved' },
-  { id: '3', productId: '2', userName: 'Ana', userLastName: 'Martínez', rating: 5, comment: 'Superó mis expectativas.', date: '2024-01-13', images: [], videos: [], status: 'approved' },
-];
-
 export const ReviewProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [reviews, setReviews] = useState<Review[]>(sampleReviews);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,10 +31,10 @@ export const ReviewProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const { data, error } = await supabase
           .from('reviews')
           .select('*')
-          .order('date', { ascending: false });
+          .order('created_at', { ascending: false });
 
         if (error) throw error;
-        if (data && data.length > 0) {
+        if (data) {
           setReviews(data.map(r => ({
             ...r,
             productId: r.product_id,
@@ -65,7 +59,7 @@ export const ReviewProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const addReviewDirect = async (review: Omit<Review, 'id'>) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('reviews')
         .insert([{
           product_id: review.productId,
@@ -76,15 +70,26 @@ export const ReviewProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           rating: review.rating,
           comment: review.comment,
           status: review.status || 'pending',
-        }]);
+          avatar: review.avatar,
+          images: review.images,
+          videos: review.videos,
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
-      const newReview: Review = { ...review, id: Date.now().toString() };
-      setReviews(prev => [newReview, ...prev]);
-    } catch (error) {
+      if (data) {
+        const newReview: Review = {
+          ...data,
+          productId: data.product_id,
+          userName: data.user_name,
+          userLastName: data.user_last_name,
+        };
+        setReviews(prev => [newReview, ...prev]);
+      }
+    } catch (error: any) {
       console.error('Error adding review:', error);
-      const newReview: Review = { ...review, id: Date.now().toString() };
-      setReviews(prev => [newReview, ...prev]);
+      alert('Error: ' + error.message);
     }
   };
 
@@ -101,9 +106,8 @@ export const ReviewProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       if (error) throw error;
       setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, ...reviewData } : r));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating review:', error);
-      setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, ...reviewData } : r));
     }
   };
 
@@ -116,9 +120,8 @@ export const ReviewProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       if (error) throw error;
       setReviews(prev => prev.filter(r => r.id !== reviewId));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting review:', error);
-      setReviews(prev => prev.filter(r => r.id !== reviewId));
     }
   };
 
@@ -131,8 +134,7 @@ export const ReviewProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const addReview = async (productId: string, review: Omit<Review, 'id'>) => {
-    const newReview: Review = { ...review, id: `${productId}-${Date.now()}`, status: 'pending' as const };
-    await addReviewDirect(newReview);
+    await addReviewDirect({ ...review, productId, status: 'pending' });
   };
 
   const updateReview = async (productId: string, reviewId: string, reviewData: Partial<Review>) => {

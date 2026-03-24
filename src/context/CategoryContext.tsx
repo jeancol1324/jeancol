@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useProducts } from './ProductContext';
-import { supabase, supabaseAdmin } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 export interface Category {
   id: string;
@@ -29,16 +29,14 @@ export const CategoryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        console.log('Fetching categories from Supabase...');
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
           .from('categories')
           .select('*')
           .order('name');
 
-        console.log('Categories response:', { data, error });
+        if (error) throw error;
         
-        if (error || !data || data.length === 0) {
-          console.log('No categories found in database');
+        if (!data || data.length === 0) {
           setCategories([]);
         } else {
           const categoriesWithCount = data.map(cat => ({
@@ -56,31 +54,17 @@ export const CategoryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    if (products.length > 0) {
-      setCategories(prev => prev.map(cat => ({
-        ...cat,
-        count: products.filter(p => p.category.toLowerCase() === cat.name.toLowerCase()).length
-      })));
-    }
   }, [products]);
 
   const addCategory = async (category: Omit<Category, 'id'>) => {
     try {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('categories')
         .insert([category])
         .select()
         .single();
 
-      console.log('Add category result:', { data, error });
-      
-      if (error) {
-        alert('Error al guardar categoría: ' + error.message);
-        throw error;
-      }
+      if (error) throw error;
       if (data) {
         setCategories(prev => [...prev, { ...data, count: 0 }]);
       }
@@ -92,17 +76,12 @@ export const CategoryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateCategory = async (id: string, updates: Partial<Category>) => {
     try {
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('categories')
         .update(updates)
         .eq('id', id);
 
-      console.log('Update category result:', { error });
-      
-      if (error) {
-        alert('Error al actualizar categoría: ' + error.message);
-        throw error;
-      }
+      if (error) throw error;
       setCategories(prev => prev.map(cat => cat.id === id ? { ...cat, ...updates } : cat));
     } catch (error: any) {
       console.error('Error updating category:', error);
@@ -112,17 +91,12 @@ export const CategoryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const deleteCategory = async (id: string) => {
     try {
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('categories')
         .delete()
         .eq('id', id);
 
-      console.log('Delete category result:', { error });
-      
-      if (error) {
-        alert('Error al eliminar categoría: ' + error.message);
-        throw error;
-      }
+      if (error) throw error;
       setCategories(prev => prev.filter(cat => cat.id !== id));
     } catch (error: any) {
       console.error('Error deleting category:', error);
