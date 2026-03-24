@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Order, OrderStatus } from '../types';
+import { ORDERS as LOCAL_ORDERS } from '../constants';
 import { supabase, supabaseAdmin } from '../lib/supabase';
 
 export type { Order, OrderStatus };
@@ -42,12 +43,16 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         console.log('Orders response:', { data, error });
         
-        if (error) throw error;
-        if (data && data.length > 0) {
+        if (error || !data || data.length === 0) {
+          console.log('Using local orders as fallback');
+          setOrders(LOCAL_ORDERS);
+        } else {
           setOrders(data);
         }
       } catch (error) {
         console.error('Error fetching orders:', error);
+        console.log('Using local orders as fallback');
+        setOrders(LOCAL_ORDERS);
       } finally {
         setLoading(false);
       }

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { CATEGORIES as LOCAL_CATEGORIES } from '../constants';
 import { useProducts } from './ProductContext';
 import { supabase, supabaseAdmin } from '../lib/supabase';
 
@@ -37,8 +38,10 @@ export const CategoryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         console.log('Categories response:', { data, error });
         
-        if (error) throw error;
-        if (data && data.length > 0) {
+        if (error || !data || data.length === 0) {
+          console.log('Using local categories as fallback');
+          setCategories(LOCAL_CATEGORIES.map(c => ({ ...c, count: 0 })));
+        } else {
           const categoriesWithCount = data.map(cat => ({
             ...cat,
             count: products.filter(p => p.category.toLowerCase() === cat.name.toLowerCase()).length
@@ -47,6 +50,8 @@ export const CategoryProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       } catch (error) {
         console.error('Error fetching categories:', error);
+        console.log('Using local categories as fallback');
+        setCategories(LOCAL_CATEGORIES.map(c => ({ ...c, count: 0 })));
       } finally {
         setLoading(false);
       }

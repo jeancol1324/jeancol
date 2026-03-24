@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product } from '../types';
+import { PRODUCTS as LOCAL_PRODUCTS } from '../constants';
 import { supabase, supabaseAdmin } from '../lib/supabase';
 
 interface ProductContextType {
@@ -31,8 +32,10 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         console.log('Products response:', { data, error });
         
-        if (error) throw error;
-        if (data && data.length > 0) {
+        if (error || !data || data.length === 0) {
+          console.log('Using local products as fallback');
+          setProducts(LOCAL_PRODUCTS);
+        } else {
           setProducts(data.map(p => ({
             ...p,
             images: p.images || [],
@@ -43,6 +46,8 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
       } catch (error) {
         console.error('Error fetching products:', error);
+        console.log('Using local products as fallback');
+        setProducts(LOCAL_PRODUCTS);
       } finally {
         setLoading(false);
       }
