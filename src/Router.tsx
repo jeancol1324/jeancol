@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,7 +31,13 @@ const AdminHomeEditorScreen = lazy(() => import('./pages/Admin/AdminHomeEditorSc
 const AdminLoginScreen = lazy(() => import('./pages/Admin/AdminLoginScreen').then(m => ({ default: m.AdminLoginScreen })));
 
 const AdminProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAdmin, isLoading, user } = useAuth();
+  const { isAdmin, isLoading, user, checkAdminStatus } = useAuth();
+
+  useEffect(() => {
+    if (user && !isAdmin) {
+      checkAdminStatus();
+    }
+  }, [user, isAdmin, checkAdminStatus]);
 
   if (isLoading) {
     return (
@@ -41,7 +47,7 @@ const AdminProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!isAdmin || !user) {
+  if (!user) {
     return <Navigate to="/admin/login" replace />;
   }
 

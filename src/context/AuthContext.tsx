@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -20,8 +20,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const checkAdminStatus = async (): Promise<boolean> => {
+  const checkAdminStatus = useCallback(async (): Promise<boolean> => {
     if (!user) {
       setIsAdmin(false);
       return false;
@@ -48,22 +49,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAdmin(false);
       return false;
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
-        setUser(session?.user ?? null);
         
         if (session?.user) {
-          await checkAdminStatus();
+          setUser(session.user);
+          // Check admin status
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+          if (!error && data) {
+            setIsAdmin(data.is_admin || false);
+          }
         }
       } catch (err) {
         console.error('Auth init error:', err);
       } finally {
         setIsLoading(false);
+        setIsInitialized(true);
       }
     };
 
@@ -75,7 +86,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          await checkAdminStatus();
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+          if (!error && data) {
+            setIsAdmin(data.is_admin || false);
+          } else {
+            setIsAdmin(false);
+          }
         } else {
           setIsAdmin(false);
         }
@@ -97,7 +118,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.user) {
         setUser(data.user);
         setSession(data.session);
-        await checkAdminStatus();
+        
+        // Check admin status after login
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', data.user.id)
+          .maybeSingle();
+
+        if (!profileError && profileData) {
+          setIsAdmin(profileData.is_admin || false);
+        }
       }
       
       return { error: null };
