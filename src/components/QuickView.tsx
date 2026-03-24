@@ -237,9 +237,9 @@ export const QuickView = ({ product, onClose }: QuickViewProps) => {
                 </h2>
 
                 <div className="flex items-baseline gap-6">
-                  <span className="text-5xl font-black text-zinc-900 dark:text-white tracking-tighter">${product.price.toFixed(2)}</span>
+                  <span className="text-5xl font-black text-zinc-900 dark:text-white tracking-tighter">${product.price.toLocaleString('es-CO')}</span>
                   {product.oldPrice && (
-                    <span className="text-2xl text-zinc-400 line-through font-bold opacity-50 tracking-tighter">${product.oldPrice.toFixed(2)}</span>
+                    <span className="text-2xl text-zinc-400 line-through font-bold opacity-50 tracking-tighter">${product.oldPrice.toLocaleString('es-CO')}</span>
                   )}
                 </div>
 

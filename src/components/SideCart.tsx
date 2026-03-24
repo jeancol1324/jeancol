@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, Tag, Copy, Check, Bookmark } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
+import { useCart, DEFAULT_COUPONS } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 
 interface SideCartProps {
@@ -11,14 +11,16 @@ interface SideCartProps {
 }
 
 export const SideCart: React.FC<SideCartProps> = ({ isOpen, onClose }) => {
-  const { items, updateQuantity, removeItem, freeShippingProgress, remainingForFreeShipping, appliedCoupon, setAppliedCoupon, discount, finalTotal } = useCart();
+  const { cart: items, updateQuantity, removeFromCart, freeShippingProgress, remainingForFreeShipping, appliedCoupon, setAppliedCoupon, discount, finalTotal } = useCart();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const itemCount = items?.length || 0;
+  const total = items?.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0) || 0;
+  const formatCOP = (amount: number) => amount.toLocaleString('es-CO');
   
   const [couponInput, setCouponInput] = useState('');
   const [showCouponInput, setShowCouponInput] = useState(false);
   const [couponError, setCouponError] = useState('');
-  const [savedForLater, setSavedForLater] = useState<any[]>([]);
 
   const handleCheckout = () => {
     onClose();
@@ -26,7 +28,7 @@ export const SideCart: React.FC<SideCartProps> = ({ isOpen, onClose }) => {
   };
 
   const applyCoupon = () => {
-    const coupon = COUPONS.find(c => c.code.toUpperCase() === couponInput.toUpperCase());
+    const coupon = DEFAULT_COUPONS.find(c => c.code.toUpperCase() === couponInput.toUpperCase());
     
     if (!coupon) {
       setCouponError('Código de cupón inválido');
@@ -48,21 +50,6 @@ export const SideCart: React.FC<SideCartProps> = ({ isOpen, onClose }) => {
   const removeCoupon = () => {
     setAppliedCoupon(null);
     showToast('Cupón eliminado', 'success');
-  };
-
-  const saveForLater = (item: any) => {
-    setSavedForLater(prev => [...prev, item]);
-    removeItem(item.id);
-    showToast('Guardado para después', 'success');
-  };
-
-  const moveToCart = (item: any) => {
-    const { id, ...rest } = item;
-    items.forEach(i => {
-      if (i.id === item.savedId) {
-        useCart;
-      }
-    });
   };
 
   return (
@@ -88,7 +75,7 @@ export const SideCart: React.FC<SideCartProps> = ({ isOpen, onClose }) => {
               <div className="px-4 md:px-6 py-3 bg-primary/10 border-b border-primary/20">
                 <div className="flex items-center justify-between text-xs mb-2">
                   <span className="font-medium text-primary">
-                    {freeShippingProgress >= 100 ? 'Envío gratis logrado!' : `Faltan $${remainingForFreeShipping.toFixed(2)} para envío gratis`}
+                    {freeShippingProgress >= 100 ? 'Envío gratis logrado!' : `Faltan $${formatCOP(remainingForFreeShipping)} para envío gratis`}
                   </span>
                   <span className="font-black text-primary">{Math.round(freeShippingProgress)}%</span>
                 </div>
@@ -181,11 +168,14 @@ export const SideCart: React.FC<SideCartProps> = ({ isOpen, onClose }) => {
                               </p>
                             </div>
                             <button
-                              onClick={() => saveForLater(item)}
-                              className="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 hover:text-primary transition-colors"
-                              title="Guardar para después"
+                              onClick={() => {
+                                removeFromCart(item.id, item.selectedSize);
+                                showToast('Producto eliminado del carrito', 'success');
+                              }}
+                              className="w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 text-zinc-400 hover:text-red-500 transition-colors"
+                              title="Eliminar del carrito"
                             >
-                              <Bookmark className="w-3 h-3 md:w-4 md:h-4" />
+                              <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
                             </button>
                           </div>
                           <div className="flex justify-between items-center mt-3">
@@ -205,46 +195,13 @@ export const SideCart: React.FC<SideCartProps> = ({ isOpen, onClose }) => {
                               </button>
                             </div>
                             <span className="text-sm md:text-base font-black text-zinc-900 dark:text-white">
-                              ${(item.price * item.quantity).toFixed(2)}
+                              ${(item.price * item.quantity).toLocaleString('es-CO')}
                             </span>
                           </div>
                         </div>
                       </motion.div>
                     ))}
                   </AnimatePresence>
-
-                  {/* Saved for later */}
-                  {savedForLater.length > 0 && (
-                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                      <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3">
-                        Guardados para después ({savedForLater.length})
-                      </h4>
-                      <div className="space-y-2">
-                        {savedForLater.map((item, index) => (
-                          <div key={index} className="flex gap-3 bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl">
-                            <div className="w-14 h-14 rounded-lg overflow-hidden bg-white dark:bg-zinc-800 shrink-0">
-                              <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h5 className="text-xs font-black text-zinc-900 dark:text-white truncate">{item.name}</h5>
-                              <p className="text-xs text-zinc-500">${item.price.toFixed(2)}</p>
-                            </div>
-                            <button 
-                              onClick={() => {
-                                const newItems = [...savedForLater];
-                                newItems.splice(index, 1);
-                                setSavedForLater(newItems);
-                                showToast('Movido al carrito', 'success');
-                              }}
-                              className="text-primary text-[10px] font-bold uppercase"
-                            >
-                              Mover al carrito
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Coupon Section */}
@@ -300,21 +257,9 @@ export const SideCart: React.FC<SideCartProps> = ({ isOpen, onClose }) => {
                 <div className="p-4 md:p-6 border-t border-zinc-100 dark:border-zinc-800 space-y-3 bg-white dark:bg-zinc-950">
                   <div className="flex justify-between text-sm">
                     <span className="text-zinc-500">Subtotal</span>
-                    <span className="font-medium">${total.toFixed(2)}</span>
-                  </div>
-                  {appliedCoupon && (
-                    <div className="flex justify-between text-sm text-emerald-600">
-                      <span>Descuento ({appliedCoupon.code})</span>
-                      <span>-${discount.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-500">Envío</span>
-                    <span className="text-emerald-600 font-medium">Calculado en checkout</span>
-                  </div>
-                  <div className="flex justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                    <span className="text-base font-black text-zinc-900 dark:text-white">Total</span>
-                    <span className="text-lg font-black text-primary">${finalTotal.toFixed(2)}</span>
+                      <span className="font-medium">${formatCOP(total)}</span>
+                      <span>-${formatCOP(discount)}</span>
+                      <span className="text-lg font-black text-primary">${formatCOP(finalTotal)}</span>
                   </div>
 
                   <motion.button

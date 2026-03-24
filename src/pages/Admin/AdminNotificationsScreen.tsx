@@ -2,20 +2,18 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingBag, AlertTriangle, User, Settings } from 'lucide-react';
 import { AdminNavigation } from '../../components/AdminNavigation';
-import { Container } from '../../components/Container';
 
 export const AdminNotificationsScreen = () => (
   <div className="pb-24 lg:pb-10 flex flex-col lg:flex-row min-h-screen bg-zinc-50/50">
     <AdminNavigation />
     <div className="flex-1">
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-zinc-100 h-14 lg:h-20 flex items-center">
-        <Container className="flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-zinc-100 h-14 lg:h-20 flex items-center px-4 lg:px-8">
+        <div className="flex items-center justify-between w-full">
           <h2 className="text-primary text-lg lg:text-2xl font-black tracking-tighter uppercase">ALERTAS</h2>
           <button className="text-[8px] lg:text-xs font-black text-zinc-400 uppercase tracking-widest hover:text-primary transition-colors">Marcar todo como leído</button>
-        </Container>
+        </div>
       </header>
-      <main className="py-3 lg:py-8">
-        <Container className="max-w-2xl">
+      <main className="py-3 lg:py-8 px-4 lg:px-8">
           <div className="space-y-2 lg:space-y-4">
             {[
               { title: 'Nuevo pedido recibido', desc: 'El pedido #8429 ha sido pagado y está listo para envío.', time: 'Hace 5 min', icon: ShoppingBag, color: 'text-primary', bg: 'bg-primary/5', unread: true },
@@ -42,7 +40,6 @@ export const AdminNotificationsScreen = () => (
               </motion.div>
             ))}
           </div>
-        </Container>
       </main>
     </div>
   </div>

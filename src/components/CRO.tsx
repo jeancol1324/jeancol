@@ -217,6 +217,7 @@ export const UpsellCard: React.FC<UpsellCardProps> = ({
   onAdd,
   className
 }) => {
+  const formatCOP = (amount: number) => amount.toLocaleString('es-CO');
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -236,7 +237,7 @@ export const UpsellCard: React.FC<UpsellCardProps> = ({
           {product.name}
         </p>
         <p className="text-sm font-black text-emerald-600">
-          +${addPrice.toFixed(2)}
+          +${formatCOP(addPrice)}
         </p>
       </div>
       <motion.button

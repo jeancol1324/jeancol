@@ -104,9 +104,10 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
 interface CountdownBadgeProps {
   endDate: string;
   className?: string;
+  showLabel?: boolean;
 }
 
-export const CountdownBadge: React.FC<CountdownBadgeProps> = ({ endDate, className = '' }) => {
+export const CountdownBadge: React.FC<CountdownBadgeProps> = ({ endDate, className = '', showLabel = true }) => {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => calculateTimeLeft(endDate));
 
   useEffect(() => {
@@ -132,11 +133,10 @@ export const CountdownBadge: React.FC<CountdownBadgeProps> = ({ endDate, classNa
   };
 
   return (
-    <div className={`inline-flex items-center gap-1.5 bg-primary text-white px-2 py-1 rounded-full ${className}`}>
-      <Clock className="w-3 h-3" />
-      <span className="text-[10px] font-black uppercase tracking-wider">
-        {getTimeString()}
-      </span>
+    <div className={`flex items-center justify-center gap-1.5 bg-black/70 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg ${className}`}>
+      <Clock className="w-4 h-4 text-red-400" />
+      <span className="text-[10px] font-medium">Oferta:</span>
+      <span className="text-[11px] font-bold text-red-400">{getTimeString()}</span>
     </div>
   );
 };

@@ -22,6 +22,7 @@ interface UpsellItemProps {
 }
 
 const UpsellItem: React.FC<UpsellItemProps> = ({ product, addPrice, onAdd, onDismiss }) => {
+  const formatCOP = (amount: number) => amount.toLocaleString('es-CO');
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -37,7 +38,7 @@ const UpsellItem: React.FC<UpsellItemProps> = ({ product, addPrice, onAdd, onDis
       <div className="flex-1 min-w-0">
         <p className="text-xs font-bold uppercase text-emerald-600 dark:text-emerald-400 mb-1">Añade por solo</p>
         <p className="text-sm font-black text-zinc-900 dark:text-white truncate">{product.name}</p>
-        <p className="text-lg font-black text-emerald-600">+${addPrice.toFixed(2)}</p>
+        <p className="text-lg font-black text-emerald-600">+${formatCOP(addPrice)}</p>
       </div>
       <div className="flex flex-col gap-2">
         <button
@@ -155,7 +156,7 @@ export const FreeShippingProgress: React.FC<FreeShippingProgressProps> = ({
         <>
           <div className="flex justify-between text-xs">
             <span className="text-zinc-500">
-              Te faltan <strong className="text-primary">${remaining.toFixed(2)}</strong> para envío gratis
+              Te faltan <strong className="text-primary">${remaining.toLocaleString('es-CO')}</strong> para envío gratis
             </span>
             <span className="text-emerald-500 font-bold">{Math.round(progress)}%</span>
           </div>
@@ -257,35 +258,36 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   tax = 0,
   className
 }) => {
+  const formatCOP = (amount: number) => amount.toLocaleString('es-CO');
   const total = subtotal + shipping - discount + tax;
 
   return (
     <div className={cn('space-y-3', className)}>
       <div className="flex justify-between text-sm">
         <span className="text-zinc-500">Subtotal</span>
-        <span className="font-medium">${subtotal.toFixed(2)}</span>
+        <span className="font-medium">${formatCOP(subtotal)}</span>
       </div>
       <div className="flex justify-between text-sm">
         <span className="text-zinc-500">Envío</span>
         <span className={shipping === 0 ? 'text-emerald-500 font-bold' : 'font-medium'}>
-          {shipping === 0 ? 'GRATIS' : `$${shipping.toFixed(2)}`}
+          {shipping === 0 ? 'GRATIS' : `$${formatCOP(shipping)}`}
         </span>
       </div>
       {discount > 0 && (
         <div className="flex justify-between text-sm text-emerald-500">
           <span>Descuento</span>
-          <span className="font-bold">-${discount.toFixed(2)}</span>
+          <span className="font-bold">-${formatCOP(discount)}</span>
         </div>
       )}
       {tax > 0 && (
         <div className="flex justify-between text-sm">
           <span className="text-zinc-500">IVA</span>
-          <span className="font-medium">${tax.toFixed(2)}</span>
+          <span className="font-medium">${formatCOP(tax)}</span>
         </div>
       )}
       <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex justify-between">
         <span className="text-lg font-black text-zinc-900 dark:text-white">Total</span>
-        <span className="text-2xl font-black text-primary italic">${total.toFixed(2)}</span>
+        <span className="text-2xl font-black text-primary italic">${formatCOP(total)}</span>
       </div>
     </div>
   );

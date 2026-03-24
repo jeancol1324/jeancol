@@ -1,19 +1,15 @@
 import React from 'react';
 import { Mail, Phone, MapPin, Calendar } from 'lucide-react';
 import { AdminNavigation } from '../../components/AdminNavigation';
-import { Container } from '../../components/Container';
 
 export const AdminProfileScreen = () => (
   <div className="pb-24 lg:pb-10 flex flex-col lg:flex-row min-h-screen bg-zinc-50/50">
     <AdminNavigation />
     <div className="flex-1">
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-zinc-100 h-14 lg:h-20 flex items-center">
-        <Container>
-          <h2 className="text-primary text-lg lg:text-2xl font-black tracking-tighter uppercase">MI PERFIL</h2>
-        </Container>
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-zinc-100 h-14 lg:h-20 flex items-center px-4 lg:px-8">
+        <h2 className="text-primary text-lg lg:text-2xl font-black tracking-tighter uppercase">MI PERFIL</h2>
       </header>
-      <main className="py-3 lg:py-8">
-        <Container className="max-w-2xl">
+      <main className="py-3 lg:py-8 px-4 lg:px-8">
           <div className="bg-white rounded-xl lg:rounded-3xl border border-zinc-100 shadow-sm overflow-hidden">
             <div className="h-20 lg:h-32 bg-zinc-900 relative">
               <div className="absolute -bottom-8 left-6 lg:left-10 w-16 h-16 lg:w-28 lg:h-28 rounded-xl lg:rounded-3xl bg-white p-1 shadow-xl">
@@ -51,7 +47,6 @@ export const AdminProfileScreen = () => (
               </div>
             </div>
           </div>
-        </Container>
       </main>
     </div>
   </div>

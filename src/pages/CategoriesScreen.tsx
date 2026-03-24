@@ -1,198 +1,283 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Star } from 'lucide-react';
-import { useCart } from '../context/CartContext';
-import { useToast } from '../context/ToastContext';
-import { Footer } from '../components/Footer';
-
-const CartIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 60 60" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-    <path d="M52.5 9.16667H45.8333M52.5 9.16667V47.5C52.5 48.8818 51.6318 50 50.25 50H41.5M52.5 9.16667L46.5833 2.5H13.4167M13.4167 2.5L5.83333 18.3333V47.5C5.83333 48.8818 6.7012 50 8.08333 50H41.5M13.4167 2.5H46.5833M41.5 50C43.433 46.2278 44.5 41.6189 44.5 36.6667C44.5 31.7144 43.433 27.1056 41.5 23.3333C39.567 27.1056 38.5 31.7144 38.5 36.6667C38.5 41.6189 39.567 46.2278 41.5 50ZM19.5 36.6667C19.5 40.2389 17.071 43.1667 14.125 43.1667C11.179 43.1667 8.75 40.2389 8.75 36.6667C8.75 33.0944 11.179 30.1667 14.125 30.1667C17.071 30.1667 19.5 33.0944 19.5 36.6667ZM50.25 43.1667C52.196 40.2389 53.25 36.4744 53.25 32.5C53.25 28.5256 52.196 24.7611 50.25 21.8333C48.304 24.7611 47.25 28.5256 47.25 32.5C47.25 36.4744 48.304 40.2389 50.25 43.1667Z" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-  </svg>
-);
-
-const categoryProducts = {
-  hombres: [
-    { id: 'h1', name: 'Sudadera Premium', price: 89.99, image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=800&q=80', category: 'Hombres', rating: 4.8, isNew: true },
-    { id: 'h2', name: 'Chaqueta Bomber', price: 179.99, image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80', category: 'Hombres', rating: 4.5, isNew: true },
-    { id: 'h3', name: 'Camisa Formal', price: 79.99, image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80', category: 'Hombres', rating: 4.4 },
-    { id: 'h4', name: 'Pantalón Cargo', price: 89.99, image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=800&q=80', category: 'Hombres', rating: 4.5, isTrending: true },
-    { id: 'h5', name: 'Polo Clásico', price: 49.99, image: 'https://images.unsplash.com/photo-1625910513413-5fc4bd8b3b3e?auto=format&fit=crop&w=800&q=80', category: 'Hombres', rating: 4.6 },
-    { id: 'h6', name: 'Abrigo Lana', price: 199.99, image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=800&q=80', category: 'Hombres', rating: 4.7 },
-  ],
-  mujeres: [
-    { id: 'm1', name: 'Vestido de Seda', price: 249.99, image: 'https://images.unsplash.com/photo-1539008835154-33321e17c76a?auto=format&fit=crop&w=800&q=80', category: 'Mujeres', rating: 4.9, isNew: true },
-    { id: 'm2', name: 'Falda Midi', price: 99.99, image: 'https://images.unsplash.com/photo-1583496661160-fb5886a0uj7d?auto=format&fit=crop&w=800&q=80', category: 'Mujeres', rating: 4.7, isNew: true },
-    { id: 'm3', name: 'Top Deportivo', price: 59.99, image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80', category: 'Mujeres', rating: 4.8 },
-    { id: 'm4', name: 'Blusa Elegante', price: 89.99, image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?auto=format&fit=crop&w=800&q=80', category: 'Mujeres', rating: 4.6 },
-    { id: 'm5', name: 'Jeans Premium', price: 109.99, image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80', category: 'Mujeres', rating: 4.5, isTrending: true },
-    { id: 'm6', name: 'Abrigo Largo', price: 229.99, image: 'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?auto=format&fit=crop&w=800&q=80', category: 'Mujeres', rating: 4.8 },
-  ],
-  accesorios: [
-    { id: 'a1', name: 'Reloj Cronógrafo', price: 399.99, image: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=800&q=80', category: 'Accesorios', rating: 4.7, isTrending: true },
-    { id: 'a2', name: 'Bolso de Cuero', price: 129.99, image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80', category: 'Accesorios', rating: 4.8, isTrending: true },
-    { id: 'a3', name: 'Gafas Aviador', price: 149.99, image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=800&q=80', category: 'Accesorios', rating: 4.9 },
-    { id: 'a4', name: 'Cartera Minimal', price: 79.99, image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=800&q=80', category: 'Accesorios', rating: 4.6 },
-    { id: 'a5', name: 'Bufanda Premium', price: 59.99, image: 'https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?auto=format&fit=crop&w=800&q=80', category: 'Accesorios', rating: 4.5, isNew: true },
-    { id: 'a6', name: 'Cinturón Cuero', price: 69.99, image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80', category: 'Accesorios', rating: 4.7 },
-  ],
-  calzado: [
-    { id: 'c1', name: 'Zapatillas Pro', price: 159.99, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80', category: 'Calzado', rating: 4.6 },
-    { id: 'c2', name: 'Botas Chelsea', price: 219.99, image: 'https://images.unsplash.com/photo-1542280756-74b2f55e73ab?auto=format&fit=crop&w=800&q=80', category: 'Calzado', rating: 4.6, isTrending: true },
-    { id: 'c3', name: 'Sneakers Urban', price: 129.99, image: 'https://images.unsplash.com/photo-1460353581641-37baddab0fa2?auto=format&fit=crop&w=800&q=80', category: 'Calzado', rating: 4.8, isNew: true },
-    { id: 'c4', name: 'Mocasines', price: 99.99, image: 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?auto=format&fit=crop&w=800&q=80', category: 'Calzado', rating: 4.5 },
-    { id: 'c5', name: 'Sandalias', price: 79.99, image: 'https://images.unsplash.com/photo-1603487742131-4160ec999306?auto=format&fit=crop&w=800&q=80', category: 'Calzado', rating: 4.4, isNew: true },
-    { id: 'c6', name: 'Zapatos Formales', price: 189.99, image: 'https://images.unsplash.com/photo-1533867617858-e7b97e060509?auto=format&fit=crop&w=800&q=80', category: 'Calzado', rating: 4.7 },
-  ],
-};
-
-const categories = [
-  { id: 'hombres', name: 'Hombres', image: 'https://images.unsplash.com/photo-1490578474895-699cd4e2cf59?auto=format&fit=crop&w=800&q=80' },
-  { id: 'mujeres', name: 'Mujeres', image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80' },
-  { id: 'accesorios', name: 'Accesorios', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80' },
-  { id: 'calzado', name: 'Calzado', image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=800&q=80' },
-];
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
-}
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, Search, X, Sparkles, Star, Filter } from 'lucide-react';
+import { useCategories } from '../context/CategoryContext';
+import { Helmet } from 'react-helmet-async';
 
 export const CategoriesScreen = () => {
   const navigate = useNavigate();
-  const { addItem } = useCart();
-  const { showToast } = useToast();
+  const { categories } = useCategories();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const renderProducts = (products: any[]) => (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-      {products.map((product, index) => (
-        <motion.div
-          key={product.id}
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: index * 0.05 }}
-          className="group"
-        >
-          <div 
-            onClick={() => navigate(`/product/${product.id}`)}
-            className="relative aspect-[3/4] rounded-xl md:rounded-2xl overflow-hidden bg-white dark:bg-zinc-800 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer"
-          >
-            <img 
-              src={product.image} 
-              alt={product.name}
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-            
-            <div className="absolute top-2 left-2 flex flex-col gap-1">
-              {product.isNew && (
-                <span className="bg-emerald-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider">Nuevo</span>
-              )}
-              {product.isTrending && (
-                <span className="bg-primary text-white px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider">Trending</span>
-              )}
-            </div>
-
-            <motion.button 
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={(e) => { 
-                e.stopPropagation();
-                addItem({ ...product, selectedSize: 'M', quantity: 1 });
-                showToast(`${product.name} añadido al carrito`, 'success');
-              }}
-              className="absolute top-2 right-2 w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center hover:bg-primary hover:text-white transition-all shadow-md text-primary"
-            >
-              <CartIcon className="w-4 h-4 md:w-5 md:h-5" />
-            </motion.button>
-          </div>
-
-          <div className="mt-2 md:mt-3 space-y-1">
-            <span className="text-primary text-[8px] md:text-[9px] font-black uppercase tracking-wider">{product.category}</span>
-            <h3 className="text-xs md:text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tight truncate">{product.name}</h3>
-            <div className="flex items-center justify-between">
-              <span className="text-sm md:text-base font-black text-zinc-900 dark:text-white">${product.price.toFixed(2)}</span>
-              <div className="flex items-center gap-1 text-amber-500">
-                <Star className="w-3 h-3 fill-amber-500" />
-                <span className="text-[10px] font-black">{product.rating}</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
+  const filteredCategories = useMemo(() => {
+    let result = categories;
+    if (searchQuery.trim()) {
+      result = result.filter(c => 
+        c.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    if (selectedCategory) {
+      result = result.filter(c => c.name === selectedCategory);
+    }
+    return result;
+  }, [categories, searchQuery, selectedCategory]);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 transition-colors duration-500 pb-40">
-      {/* Hero Banner */}
-      <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 py-16 md:py-20">
-        <div className="w-full px-4 lg:px-8 text-center">
-          <span className="text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-4 block">Colecciones</span>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white uppercase tracking-tighter italic leading-none mb-4">
-            Explora por <span className="text-primary">Categoría</span>
-          </h1>
-          <p className="text-zinc-400 text-base md:text-lg max-w-xl mx-auto">
-            Encuentra exactamente lo que buscas en nuestra selección curada.
-          </p>
+    <div className="min-h-screen bg-white dark:bg-zinc-950 transition-colors duration-500">
+      <Helmet>
+        <title>Categorías | JEANCOL</title>
+        <meta name="description" content="Explora nuestras categorías de moda: ropa, accesorios, calzado y más." />
+      </Helmet>
+
+      {/* Header Hero */}
+      <div className="relative bg-gradient-to-br from-zinc-900 via-zinc-950 to-black overflow-hidden">
+        <div className="absolute inset-0">
+          <motion.div
+            animate={{ opacity: [0.1, 0.3, 0.1] }}
+            transition={{ duration: 8, repeat: Infinity }}
+            className="absolute top-0 left-1/4 w-96 h-96 bg-primary/30 blur-[120px] rounded-full"
+          />
+          <motion.div
+            animate={{ opacity: [0.1, 0.2, 0.1] }}
+            transition={{ duration: 10, repeat: Infinity, delay: 3 }}
+            className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-500/20 blur-[100px] rounded-full"
+          />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 lg:px-8 py-16 lg:py-24">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center max-w-2xl mx-auto space-y-6"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex justify-center"
+            >
+              <span className="bg-white/10 backdrop-blur-xl text-white px-4 md:px-6 py-2 md:py-3 rounded-full text-[10px] md:text-xs font-black uppercase tracking-[0.3em] md:tracking-[0.5em] border border-white/20 shadow-2xl">
+                Explora Nuestras Colecciones
+              </span>
+            </motion.div>
+
+            <motion.h1 
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.7 }}
+              className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white uppercase tracking-tighter italic leading-[0.9] drop-shadow-2xl"
+            >
+              Categorías
+            </motion.h1>
+
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+              className="text-white/70 md:text-white/80 text-sm md:text-base lg:text-lg max-w-xl mx-auto font-medium"
+            >
+              Descubre nuestra amplia selección de productos organizados por categoría
+            </motion.p>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7, duration: 0.5 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4"
+            >
+              <button 
+                onClick={() => navigate('/products')}
+                className="px-6 md:px-8 py-3 md:py-4 bg-white text-zinc-900 rounded-xl text-xs md:text-sm font-bold uppercase tracking-wider hover:bg-zinc-100 transition-all shadow-2xl"
+              >
+                Ver Novedades
+              </button>
+              <button 
+                onClick={() => navigate('/offers')}
+                className="px-6 md:px-8 py-3 md:py-4 bg-primary/20 backdrop-blur-md border border-primary/30 text-white rounded-xl text-xs md:text-sm font-bold uppercase tracking-wider hover:bg-primary/30 transition-all"
+              >
+                Ver Ofertas
+              </button>
+            </motion.div>
+          </motion.div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 -mb-px">
+          <svg viewBox="0 0 1440 100" preserveAspectRatio="none" className="block w-full h-[60px] md:h-[80px]">
+            <path d="M0,50 C240,100 480,0 720,50 C960,100 1200,0 1440,50 L1440,100 L0,100 Z" fill="currentColor" className="text-white dark:text-zinc-900" />
+          </svg>
         </div>
       </div>
 
-      {/* Category Cards */}
-      <section className="py-8 px-4 lg:px-8 w-full">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          {categories.map((category, index) => (
-            <motion.div
-              key={category.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              onClick={() => {
-                const element = document.getElementById(category.id);
-                element?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="group cursor-pointer relative aspect-[4/3] rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <img 
-                src={category.image} 
-                alt={category.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4">
-                <h3 className="text-lg md:text-xl font-black text-white uppercase tracking-tight">{category.name}</h3>
-                <div className="flex items-center gap-2 text-white/60 text-xs mt-1">
-                  <span>Explorar</span>
-                  <ArrowRight className="w-3 h-3" />
+      {/* Search Bar */}
+      <div className="bg-white dark:bg-zinc-950 border-b border-zinc-100 dark:border-zinc-800">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4">
+          <div className="relative max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Buscar categorías..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-10 py-3 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors"
+              >
+                <X className="w-4 h-4 text-zinc-400" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Categories Grid */}
+      <section className="py-16 lg:py-24 px-4 lg:px-8 bg-white dark:bg-zinc-950">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10">
+            <div>
+              <h2 className="text-2xl lg:text-3xl font-black text-zinc-900 dark:text-white uppercase tracking-tight">
+                {searchQuery || selectedCategory ? 'Resultados' : 'Todas las Categorías'}
+              </h2>
+              <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">
+                {filteredCategories.length} {filteredCategories.length === 1 ? 'categoría encontrada' : 'categorías encontradas'}
+              </p>
+            </div>
+            
+            {(searchQuery || selectedCategory) && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory(null);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-xl text-sm font-medium transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+
+          {/* Categories */}
+          <AnimatePresence mode="wait">
+            {filteredCategories.length > 0 ? (
+              <motion.div
+                key="grid"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6"
+              >
+                {filteredCategories.map((category, index) => (
+                  <motion.div
+                    key={category.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => navigate(`/category/${category.name}`)}
+                    className="group cursor-pointer"
+                  >
+                    <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900">
+                      <img 
+                        src={category.image} 
+                        alt={category.name}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                      
+                      {/* Content */}
+                      <div className="absolute inset-0 flex flex-col justify-end p-5 lg:p-6">
+                        <span className="text-[10px] font-black text-primary uppercase tracking-widest mb-2 opacity-0 transform translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                          Ver colección
+                        </span>
+                        <h3 className="text-lg lg:text-xl font-black text-white uppercase tracking-tight mb-1">
+                          {category.name}
+                        </h3>
+                        <p className="text-xs text-white/60 mb-3">
+                          {category.count} productos
+                        </p>
+                        <div className="flex items-center gap-2 text-white/70 group-hover:text-white transition-colors">
+                          <span className="text-sm font-medium">Explorar</span>
+                          <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+
+                      {/* Hover Border */}
+                      <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary/50 rounded-2xl transition-colors duration-300" />
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center py-20"
+              >
+                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center">
+                  <Search className="w-10 h-10 text-zinc-300 dark:text-zinc-600" />
                 </div>
-              </div>
-            </motion.div>
-          ))}
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">
+                  Sin resultados
+                </h3>
+                <p className="text-zinc-500 dark:text-zinc-400 mb-4">
+                  No encontramos categorías con "{searchQuery}"
+                </p>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="px-6 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors"
+                >
+                  Limpiar búsqueda
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 
-      {/* Products by Category */}
-      {categories.map((category) => (
-        <section key={category.id} id={category.id} className="py-8 md:py-12 bg-zinc-50 dark:bg-zinc-900/50">
-          <div className="w-full px-4 lg:px-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl md:text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tight">{category.name}</h2>
-              <button 
-                onClick={() => navigate(`/category/${category.id}`)}
-                className="text-primary text-xs md:text-sm font-bold uppercase tracking-wider hover:underline"
+      {/* Promo Banner */}
+      <section className="pb-16 lg:pb-24 px-4 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-primary to-purple-600">
+            <div className="absolute inset-0 opacity-10">
+              <img 
+                src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1920&q=80" 
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="relative flex flex-col md:flex-row items-center justify-between gap-6 p-8 lg:p-12">
+              <div className="text-center md:text-left">
+                <div className="inline-flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full mb-4">
+                  <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                  <span className="text-white text-xs font-bold uppercase tracking-wider">Nueva Colección</span>
+                </div>
+                <h2 className="text-2xl lg:text-4xl font-black text-white uppercase tracking-tight mb-2">
+                  Descubre lo Nuevo
+                </h2>
+                <p className="text-white/80 max-w-md">
+                  Explora nuestra última colección con las tendencias más actuales del mercado.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/products')}
+                className="px-8 py-4 bg-white text-zinc-900 rounded-xl font-black text-sm uppercase tracking-wider hover:scale-105 transition-transform shadow-2xl whitespace-nowrap"
               >
-                Ver todo
+                Ver Productos
               </button>
             </div>
-            {renderProducts(categoryProducts[category.id as keyof typeof categoryProducts] || [])}
           </div>
-        </section>
-      ))}
-
-      <Footer />
+        </div>
+      </section>
     </div>
   );
 };
+
+export default CategoriesScreen;

@@ -32,7 +32,6 @@ import {
   Legend
 } from 'recharts';
 import { AdminNavigation } from '../../components/AdminNavigation';
-import { Container } from '../../components/Container';
 import { cn } from '../../lib/utils';
 
 const data = [
@@ -62,8 +61,8 @@ export const AdminAnalyticsScreen = () => {
       <AdminNavigation />
       
       <div className="flex-1">
-        <header className="sticky top-0 z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border-b border-zinc-100 dark:border-zinc-800 h-14 lg:h-20 flex items-center">
-          <Container className="flex items-center justify-between">
+        <header className="sticky top-0 z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border-b border-zinc-100 dark:border-zinc-800 h-14 lg:h-20 flex items-center px-4 lg:px-8">
+          <div className="flex items-center justify-between w-full">
             <h2 className="text-primary text-lg lg:text-2xl font-black tracking-tighter uppercase">Analítica Avanzada</h2>
             <div className="flex items-center gap-3">
               <button className="hidden sm:flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 transition-colors">
@@ -71,13 +70,12 @@ export const AdminAnalyticsScreen = () => {
               </button>
               <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-black text-xs">AD</div>
             </div>
-          </Container>
+          </div>
         </header>
 
-        <main className="py-8">
-          <Container className="space-y-8">
+        <main className="py-8 px-4 lg:px-8">
             {/* Filters & Controls */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
               <div className="flex bg-white dark:bg-zinc-900 p-1 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
                 {['7d', '30d', '90d', '1y'].map(range => (
                   <button 
@@ -144,7 +142,7 @@ export const AdminAnalyticsScreen = () => {
                   </div>
                 </div>
                 <div className="h-[400px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={400}>
                     <AreaChart data={data}>
                       <defs>
                         <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">
@@ -185,7 +183,7 @@ export const AdminAnalyticsScreen = () => {
               <div className="bg-white dark:bg-zinc-900 p-8 lg:p-10 rounded-[3rem] border border-zinc-100 dark:border-zinc-800 shadow-sm">
                 <h3 className="text-xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter italic mb-10">Ventas por Categoría</h3>
                 <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={400}>
                     <PieChart>
                       <Pie
                         data={categoryData}
@@ -226,7 +224,7 @@ export const AdminAnalyticsScreen = () => {
               <div className="bg-white dark:bg-zinc-900 p-8 lg:p-10 rounded-[3rem] border border-zinc-100 dark:border-zinc-800 shadow-sm">
                 <h3 className="text-xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter italic mb-10">Pedidos por Día</h3>
                 <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={400}>
                     <BarChart data={data}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                       <XAxis 
@@ -280,7 +278,6 @@ export const AdminAnalyticsScreen = () => {
                 </div>
               </div>
             </div>
-          </Container>
         </main>
       </div>
     </div>

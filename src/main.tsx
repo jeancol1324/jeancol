@@ -7,17 +7,38 @@ import './index.css';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import { CartProvider } from './context/CartContext';
+import { CategoryProvider } from './context/CategoryContext';
+import { ProductProvider } from './context/ProductContext';
+import { OrderProvider } from './context/OrderContext';
+import { LoadingProvider } from './context/LoadingContext';
+import { StoreProvider } from './context/StoreContext';
+import { ReviewProvider } from './context/ReviewContext';
+import { CouponProvider } from './context/CouponContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <HelmetProvider>
         <ThemeProvider>
-          <CartProvider>
-            <ToastProvider>
-              <App />
-            </ToastProvider>
-          </CartProvider>
+          <StoreProvider>
+            <LoadingProvider>
+              <CartProvider>
+                <ToastProvider>
+                  <CategoryProvider>
+                    <ProductProvider>
+                      <OrderProvider>
+                        <ReviewProvider>
+                          <CouponProvider>
+                            <App />
+                          </CouponProvider>
+                        </ReviewProvider>
+                      </OrderProvider>
+                    </ProductProvider>
+                  </CategoryProvider>
+                </ToastProvider>
+              </CartProvider>
+            </LoadingProvider>
+          </StoreProvider>
         </ThemeProvider>
       </HelmetProvider>
     </BrowserRouter>

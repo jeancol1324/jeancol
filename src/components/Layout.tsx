@@ -6,6 +6,8 @@ import { BottomNav } from './BottomNav';
 import { ScrollToTop } from './ScrollToTop';
 import { ScrollProgress } from './ScrollProgress';
 import { SideCart } from './SideCart';
+import { FloatingNotifications } from './FloatingNotifications';
+import { WhatsAppFloat } from './WhatsAppFloat';
 import { useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
@@ -75,6 +77,7 @@ const CustomCursor = () => {
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const isAdminPath = location.pathname.startsWith('/admin');
+  const isProductPath = location.pathname.startsWith('/product');
   const [isSideCartOpen, setIsSideCartOpen] = useState(false);
 
   useEffect(() => {
@@ -92,9 +95,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       
       <ScrollProgress height={3} />
       
-      {!isAdminPath && <Header />}
+      {!isAdminPath && !isProductPath && <Header />}
       
-      <main className={!isAdminPath ? "pt-16 lg:pt-20 flex-grow" : "flex-grow"}>
+      <main className={!isAdminPath && !isProductPath ? "pt-16 lg:pt-20 flex-grow" : "flex-grow"}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -108,10 +111,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </AnimatePresence>
       </main>
 
-      {!isAdminPath && <Footer />}
-      {!isAdminPath && <BottomNav />}
+      {!isAdminPath && !isProductPath && <Footer />}
+      {!isAdminPath && !isProductPath && <BottomNav />}
 
       <SideCart isOpen={isSideCartOpen} onClose={() => setIsSideCartOpen(false)} />
+      {!isAdminPath && <WhatsAppFloat />}
+      <FloatingNotifications />
       <ScrollToTop />
     </div>
   );

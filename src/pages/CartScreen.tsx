@@ -10,10 +10,8 @@ import {
   ShieldCheck, 
   Truck, 
   RotateCcw,
-  Sparkles,
   Zap,
-  CheckCircle2,
-  Flame
+  CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -24,7 +22,7 @@ export const CartScreen = () => {
   const navigate = useNavigate();
   const { 
     items, 
-    removeItem, 
+    removeFromCart, 
     updateQuantity, 
     totalPrice, 
     totalItems,
@@ -36,8 +34,10 @@ export const CartScreen = () => {
   const [isApplying, setIsApplying] = useState(false);
   const [couponApplied, setCouponApplied] = useState(false);
 
+  const formatCOP = (amount: number) => amount.toLocaleString('es-CO');
+
   const subtotal = totalPrice;
-  const shipping = subtotal >= freeShippingThreshold || subtotal === 0 ? 0 : 15;
+  const shipping = subtotal >= freeShippingThreshold || subtotal === 0 ? 0 : 14.5;
   const discount = couponApplied ? subtotal * 0.1 : 0;
   const total = subtotal + shipping - discount;
 
@@ -103,7 +103,7 @@ export const CartScreen = () => {
                 {freeShippingProgress >= 100 ? '¡Envío Gratis Activado!' : 'Envío Gratis'}
               </span>
               <span className="text-[10px] font-black text-primary uppercase tracking-widest">
-                {freeShippingProgress >= 100 ? '100%' : `$${remainingForFreeShipping.toFixed(2)} restantes`}
+                {freeShippingProgress >= 100 ? '100%' : `$${formatCOP(remainingForFreeShipping)} restantes`}
               </span>
             </div>
             <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
@@ -119,7 +119,7 @@ export const CartScreen = () => {
             <p className="mt-4 text-[9px] font-bold text-zinc-400 uppercase tracking-widest text-center">
               {freeShippingProgress >= 100 
                 ? 'Tu pedido califica para envío express gratuito' 
-                : `Añade $${remainingForFreeShipping.toFixed(2)} más para no pagar envío`}
+                : `Añade $${formatCOP(remainingForFreeShipping)} más para no pagar envío`}
             </p>
           </div>
         </div>
@@ -164,7 +164,7 @@ export const CartScreen = () => {
                         </div>
                       </div>
                       <button 
-                        onClick={() => removeItem(item.id, item.selectedSize)}
+                        onClick={() => removeFromCart(item.id, item.selectedSize)}
                         className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-300 hover:text-red-500 hover:bg-red-50 transition-all group/trash"
                       >
                         <Trash2 className="w-6 h-6 group-hover/trash:scale-110 transition-transform" />
@@ -188,37 +188,14 @@ export const CartScreen = () => {
                         </button>
                       </div>
                       <div className="text-right">
-                        <span className="text-3xl font-black text-zinc-900 dark:text-white tracking-tighter italic">${(item.price * item.quantity).toFixed(2)}</span>
-                        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">${item.price.toFixed(2)} / unidad</p>
+                          <span className="text-3xl font-black text-zinc-900 dark:text-white tracking-tighter italic">${(item.price * item.quantity).toLocaleString('es-CO')}</span>
+                          <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">${item.price.toLocaleString('es-CO')} / unidad</p>
                       </div>
                     </div>
                   </div>
                 </motion.div>
               ))}
             </AnimatePresence>
-
-            {/* Premium Upsell */}
-            <div className="bg-zinc-900 dark:bg-zinc-900 text-white rounded-[3rem] p-10 lg:p-12 flex flex-col sm:flex-row items-center justify-between gap-8 relative overflow-hidden group shadow-2xl border border-white/5">
-              <div className="absolute inset-0 opacity-20 pointer-events-none group-hover:scale-105 transition-transform duration-1000">
-                <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=800&q=80" className="w-full h-full object-cover" alt="bg" />
-                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 to-transparent" />
-              </div>
-              
-              <div className="relative z-10 flex items-center gap-8">
-                <div className="w-20 h-20 rounded-[2rem] bg-primary/20 backdrop-blur-xl border border-primary/30 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-10 h-10 text-primary animate-pulse" />
-                </div>
-                <div>
-                  <h4 className="text-2xl font-black uppercase tracking-tighter italic leading-none mb-2">Empaque de <br /> <span className="text-primary">Regalo Premium</span></h4>
-                  <p className="text-zinc-400 text-sm font-medium">Añade un toque de exclusividad a tu pedido.</p>
-                </div>
-              </div>
-              
-              <button className="relative z-10 px-10 py-5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-primary hover:border-primary transition-all flex items-center gap-3">
-                Añadir (+ $5.00)
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
           </div>
 
           {/* Right: Summary */}
@@ -230,7 +207,7 @@ export const CartScreen = () => {
               <div className="space-y-8 relative z-10">
                 <div className="flex justify-between items-center group">
                   <span className="text-zinc-400 font-black uppercase tracking-[0.2em] text-[10px] group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">Subtotal</span>
-                  <span className="text-xl font-black text-zinc-900 dark:text-white tracking-tighter">${subtotal.toFixed(2)}</span>
+                  <span className="text-xl font-black text-zinc-900 dark:text-white tracking-tighter">${formatCOP(subtotal)}</span>
                 </div>
                 <div className="flex justify-between items-center group">
                   <div className="flex flex-col">
@@ -241,13 +218,13 @@ export const CartScreen = () => {
                     "text-xl font-black tracking-tighter",
                     shipping === 0 ? "text-emerald-500" : "text-zinc-900 dark:text-white"
                   )}>
-                    {shipping === 0 ? 'GRATIS' : `$${shipping.toFixed(2)}`}
+                    {shipping === 0 ? 'GRATIS' : `$${formatCOP(shipping)}`}
                   </span>
                 </div>
                 {couponApplied && (
                   <div className="flex justify-between items-center group animate-in slide-in-from-right-4 duration-500">
                     <span className="text-emerald-500 font-black uppercase tracking-[0.2em] text-[10px]">Descuento (10%)</span>
-                    <span className="text-xl font-black text-emerald-500 tracking-tighter">- ${discount.toFixed(2)}</span>
+                    <span className="text-xl font-black text-emerald-500 tracking-tighter">- ${formatCOP(discount)}</span>
                   </div>
                 )}
                 
@@ -256,7 +233,7 @@ export const CartScreen = () => {
                     <span className="text-zinc-400 font-black uppercase tracking-[0.2em] text-[10px] mb-1">Total Final</span>
                     <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">IVA Incluido</span>
                   </div>
-                  <span className="text-6xl font-black text-zinc-900 dark:text-white tracking-tighter italic leading-none">${total.toFixed(2)}</span>
+                  <span className="text-6xl font-black text-zinc-900 dark:text-white tracking-tighter italic leading-none">${formatCOP(total)}</span>
                 </div>
               </div>
 

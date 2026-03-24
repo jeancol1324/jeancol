@@ -2,44 +2,83 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
   ShoppingCart, 
+  ShoppingBag,
   Menu, 
-  ArrowLeft, 
   Moon, 
   Sun, 
   X, 
   TrendingUp, 
   Clock, 
-  User, 
   ChevronDown,
   ArrowRight,
   Sparkles,
   Zap,
   Package,
-  Heart
+  Heart,
+  Scan
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useCart } from '../context/CartContext';
-import { PRODUCTS, CATEGORIES } from '../constants';
+import { useProducts } from '../context/ProductContext';
+import { useStore } from '../context/StoreContext';
 import { cn } from '../lib/utils';
+
+const ICON_MAP: Record<string, React.ComponentType<any>> = {
+  ShoppingCart,
+  ShoppingBag,
+  Search,
+  Scan,
+  Moon,
+  Sun,
+};
+
+const getHeaderIcons = () => {
+  const saved = localStorage.getItem('headerIcons');
+  return saved ? JSON.parse(saved) : {
+    cartIcon: 'ShoppingCart',
+    searchIcon: 'Search',
+    themeIcon: 'Moon',
+  };
+};
+
+const getCustomIcons = () => {
+  const saved = localStorage.getItem('customIcons');
+  return saved ? JSON.parse(saved) : {};
+};
 
 export const Header = () => {
   const { theme, toggleTheme } = useTheme();
   const { totalItems, freeShippingProgress, remainingForFreeShipping } = useCart();
+  const { products } = useProducts();
+  const { getLogo } = useStore();
   const location = useLocation();
+  const formatCOP = (amount: number) => amount.toLocaleString('es-CO');
   
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [headerIcons, setHeaderIcons] = useState(getHeaderIcons);
+  const [customIcons, setCustomIcons] = useState(getCustomIcons);
+  const [headerConfig, setHeaderConfig] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('headerConfig');
+    return saved ? JSON.parse(saved) : { 
+      showSearch: true, 
+      showTheme: true, 
+      showCart: true,
+      showHome: true,
+      showCategories: true,
+      showOffers: true 
+    };
+  });
   
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const megaMenuRef = useRef<HTMLDivElement>(null);
 
   const activeScreen = location.pathname === '/' ? 'home' : location.pathname.slice(1);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -50,6 +89,23 @@ export const Header = () => {
   }, []);
 
   useEffect(() => {
+    const handleIconsChange = () => {
+      setHeaderIcons(getHeaderIcons());
+      setCustomIcons(getCustomIcons());
+      const saved = localStorage.getItem('headerConfig');
+      setHeaderConfig(saved ? JSON.parse(saved) : { showSearch: true, showTheme: true, showCart: true });
+    };
+    window.addEventListener('headerIconsUpdated', handleIconsChange);
+    window.addEventListener('headerConfigUpdated', handleIconsChange);
+    window.addEventListener('storage', handleIconsChange);
+    return () => {
+      window.removeEventListener('headerIconsUpdated', handleIconsChange);
+      window.removeEventListener('headerConfigUpdated', handleIconsChange);
+      window.removeEventListener('storage', handleIconsChange);
+    };
+  }, []);
+
+  useEffect(() => {
     if (isSearchOpen && searchInputRef.current) {
       searchInputRef.current.focus();
     }
@@ -57,7 +113,7 @@ export const Header = () => {
 
   useEffect(() => {
     if (searchQuery.length > 1) {
-      const filtered = PRODUCTS.filter(p => 
+      const filtered = products.filter(p => 
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.category.toLowerCase().includes(searchQuery.toLowerCase())
       ).slice(0, 6);
@@ -65,7 +121,7 @@ export const Header = () => {
     } else {
       setSearchResults([]);
     }
-  }, [searchQuery]);
+  }, [searchQuery, products]);
 
   const handleSearchItemClick = (productId: string) => {
     setIsSearchOpen(false);
@@ -81,30 +137,24 @@ export const Header = () => {
       }
       if (e.key === 'Escape') {
         setIsSearchOpen(false);
-        setActiveMegaMenu(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isSearchOpen]);
 
-  // Close mega menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (megaMenuRef.current && !megaMenuRef.current.contains(event.target as Node)) {
-        setActiveMegaMenu(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const navItems = [
-    { id: 'home', label: 'Inicio', path: '/' },
-    { id: 'categories', label: 'Colecciones', path: '/categories', hasMega: true },
-    { id: 'offers', label: 'Ofertas', path: '/offers' },
-    { id: 'new', label: 'Novedades', path: '/categories' }
+    ...(headerConfig.showHome !== false ? [{ id: 'home', label: 'Inicio', path: '/' }] : []),
+    ...(headerConfig.showCategories !== false ? [{ id: 'categories', label: 'Categorías', path: '/categories' }] : []),
+    ...(headerConfig.showOffers !== false ? [{ id: 'offers', label: 'Ofertas', path: '/offers' }] : [])
   ];
+
+  const isActive = (item: typeof navItems[0]) => {
+    if (item.id === 'home') return location.pathname === '/';
+    if (item.id === 'categories') return location.pathname.includes('category') || location.pathname === '/categories';
+    if (item.id === 'offers') return location.pathname === '/offers';
+    return activeScreen === item.id;
+  };
 
   return (
     <>
@@ -136,61 +186,66 @@ export const Header = () => {
           <div className="flex items-center gap-8 lg:gap-12 xl:gap-16">
             <Link 
               to="/"
-              className="text-2xl lg:text-3xl font-black tracking-tighter cursor-pointer text-zinc-900 dark:text-white uppercase italic flex items-center gap-1 group"
+              className="flex items-center gap-3 cursor-pointer group"
             >
-              <span className="group-hover:text-primary transition-colors">JEAN</span>
-              <span className="text-primary group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">COL</span>
+              <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 shrink-0">
+                <img src={getLogo()} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+              </div>
+              <span className="text-xl lg:text-2xl font-black tracking-tighter uppercase italic bg-gradient-to-r from-primary via-orange-500 to-amber-500 bg-clip-text text-transparent group-hover:brightness-110 transition-all duration-300 dark:from-orange-300 dark:via-amber-300 dark:to-yellow-400">JEAN COL</span>
             </Link>
             
             <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
               {navItems.map((item) => (
-                <div 
+                <Link 
                   key={item.id}
-                  className="relative group"
-                  onMouseEnter={() => item.hasMega && setActiveMegaMenu(item.id)}
+                  to={item.path}
+                  className={cn(
+                    "text-[10px] font-bold uppercase tracking-[0.2em] transition-all py-2 relative",
+                    isActive(item)
+                      ? "text-primary" 
+                      : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                  )}
                 >
-                  <Link 
-                    to={item.path}
-                    className={cn(
-                      "text-[10px] font-bold uppercase tracking-[0.2em] transition-all flex items-center gap-1 py-2",
-                      activeScreen === item.id || (item.id === 'categories' && location.pathname.includes('categories'))
-                        ? "text-primary" 
-                        : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
-                    )}
-                  >
-                    {item.label}
-                    {item.hasMega && <ChevronDown className={cn("w-3 h-3 transition-transform", activeMegaMenu === item.id && "rotate-180")} />}
-                  </Link>
-                  {(activeScreen === item.id || (item.id === 'categories' && location.pathname.includes('categories'))) && (
+                  {item.label}
+                  {isActive(item) && (
                     <motion.div layoutId="headerNav" className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full" />
                   )}
-                </div>
+                </Link>
               ))}
             </nav>
           </div>
 
           <div className="flex items-center gap-2 lg:gap-4 xl:gap-6">
             <div className="hidden lg:flex items-center gap-2 xl:gap-4">
-              <button 
-                onClick={() => setIsSearchOpen(true)}
-                className="w-10 h-10 xl:w-12 xl:h-12 rounded-full flex items-center justify-center text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all group relative"
-              >
-                <Search className="w-5 h-5 xl:w-6 xl:h-6" />
-                <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[8px] font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap pointer-events-none translate-y-2 group-hover:translate-y-0">Buscar /</span>
-              </button>
+              {headerConfig.showSearch && (
+                <button 
+                  onClick={() => navigate('/products')}
+                  className="w-10 h-10 xl:w-12 xl:h-12 rounded-full flex items-center justify-center text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all group relative"
+                >
+                  {headerIcons.searchIcon?.startsWith('custom_') ? (
+                    <img src={customIcons.searchIcon} alt="Search" className="w-5 h-5 xl:w-6 xl:h-6 object-contain" />
+                  ) : (
+                    React.createElement(ICON_MAP[headerIcons.searchIcon] || Search, { className: "w-5 h-5 xl:w-6 xl:h-6" })
+                  )}
+                  <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[8px] font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap pointer-events-none translate-y-2 group-hover:translate-y-0">Buscar /</span>
+                </button>
+              )}
 
-              <button 
-                onClick={toggleTheme}
-                className="w-10 h-10 xl:w-12 xl:h-12 rounded-full flex items-center justify-center text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all"
-              >
-                {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-              </button>
-
-              <button className="w-10 h-10 xl:w-12 xl:h-12 rounded-full flex items-center justify-center text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all">
-                <User className="w-5 h-5" />
-              </button>
+              {headerConfig.showTheme && (
+                <button 
+                  onClick={toggleTheme}
+                  className="w-10 h-10 xl:w-12 xl:h-12 rounded-full flex items-center justify-center text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all"
+                >
+                  {headerIcons.themeIcon?.startsWith('custom_') ? (
+                    <img src={customIcons.themeIcon} alt="Theme" className="w-5 h-5 object-contain" />
+                  ) : (
+                    React.createElement(ICON_MAP[headerIcons.themeIcon] || Moon, { className: "w-5 h-5" })
+                  )}
+                </button>
+              )}
             </div>
 
+            {headerConfig.showCart && (
             <Link 
               to="/cart"
               onClick={(e) => {
@@ -203,7 +258,11 @@ export const Header = () => {
                 animate={totalItems > 0 ? { scale: [1, 1.2, 1] } : {}}
                 transition={{ duration: 0.3 }}
               >
-                <ShoppingCart className="w-6 h-6 lg:w-7 lg:h-7 group-hover:rotate-12 transition-transform" />
+                {headerIcons.cartIcon?.startsWith('custom_') ? (
+                  <img src={customIcons.cartIcon} alt="Cart" className="w-6 h-6 lg:w-7 lg:h-7 object-contain group-hover:rotate-12 transition-transform" />
+                ) : (
+                  React.createElement(ICON_MAP[headerIcons.cartIcon] || ShoppingCart, { className: "w-6 h-6 lg:w-7 lg:h-7 group-hover:rotate-12 transition-transform" })
+                )}
               </motion.div>
               {totalItems > 0 && (
                 <span className="absolute -top-1 -right-1 w-6 h-6 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-950 shadow-lg animate-bounce-soft">
@@ -211,6 +270,7 @@ export const Header = () => {
                 </span>
               )}
             </Link>
+            )}
 
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -220,79 +280,6 @@ export const Header = () => {
             </button>
           </div>
         </div>
-
-        {/* Mega Menu Overlay */}
-        <AnimatePresence>
-          {activeMegaMenu === 'categories' && (
-            <motion.div 
-              ref={megaMenuRef}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="absolute top-full left-0 right-0 bg-white dark:bg-zinc-950 border-b border-zinc-100 dark:border-zinc-800 shadow-[0_40px_80px_rgba(0,0,0,0.1)] overflow-hidden"
-              onMouseLeave={() => setActiveMegaMenu(null)}
-            >
-              <div className="max-w-7xl mx-auto px-12 py-16 grid grid-cols-4 gap-12">
-                <div className="col-span-1 space-y-8">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">Categorías</h4>
-                  <div className="space-y-4">
-                    {CATEGORIES.map(cat => (
-                      <Link 
-                        key={cat.id}
-                        to={`/categories?type=${cat.id}`}
-                        className="flex items-center justify-between group"
-                        onClick={() => setActiveMegaMenu(null)}
-                      >
-                        <span className="text-xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white group-hover:text-primary transition-colors italic">{cat.name}</span>
-                        <ArrowRight className="w-5 h-5 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="col-span-1 space-y-8">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">Destacados</h4>
-                  <div className="space-y-6">
-                    {[
-                      { label: 'Nuevos Arribos', icon: Sparkles },
-                      { label: 'Más Vendidos', icon: Zap },
-                      { label: 'Edición Limitada', icon: Package },
-                      { label: 'Favoritos', icon: Heart }
-                    ].map((item, i) => (
-                      <button key={i} className="flex items-center gap-4 group w-full text-left">
-                        <div className="w-10 h-10 rounded-2xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center text-zinc-400 group-hover:bg-primary group-hover:text-white transition-all">
-                          <item.icon className="w-5 h-5" />
-                        </div>
-                        <span className="text-xs font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">{item.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="col-span-2 grid grid-cols-2 gap-6">
-                  {[
-                    { title: 'Summer Drop 2024', img: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80', badge: 'Nuevo' },
-                    { title: 'Streetwear Essentials', img: 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?auto=format&fit=crop&q=80', badge: 'Trending' }
-                  ].map((banner, i) => (
-                    <div key={i} className="relative aspect-[4/5] rounded-[2rem] overflow-hidden group cursor-pointer">
-                      <img src={banner.img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={banner.title} />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                      <div className="absolute top-6 left-6">
-                        <span className="bg-white text-black text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest">{banner.badge}</span>
-                      </div>
-                      <div className="absolute bottom-8 left-8 right-8">
-                        <h5 className="text-2xl font-black text-white uppercase tracking-tighter italic mb-4">{banner.title}</h5>
-                        <button className="text-[10px] font-black uppercase tracking-widest text-white flex items-center gap-2 group/btn">
-                          Explorar <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-2 transition-transform" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </header>
 
       {/* Search Overlay */}
@@ -304,97 +291,169 @@ export const Header = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsSearchOpen(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-2xl"
+              className="absolute inset-0 bg-black/60 backdrop-blur-xl"
             />
             <motion.div 
-              initial={{ y: -100, opacity: 0 }}
+              initial={{ y: -50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -100, opacity: 0 }}
-              className="relative bg-white dark:bg-zinc-950 w-full p-8 lg:p-16 shadow-2xl border-b border-white/10"
+              exit={{ y: -50, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl w-full shadow-2xl border-b border-zinc-100/50 dark:border-zinc-800/50"
             >
-              <div className="max-w-5xl mx-auto">
-                <div className="flex items-center gap-8 mb-16">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Search className="w-8 h-8 text-primary" />
+              <div className="max-w-6xl mx-auto p-4 lg:p-8">
+                <div className="flex items-center gap-3 lg:gap-6 mb-6">
+                  <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-2xl bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center shadow-lg shadow-primary/20">
+                    <Search className="w-6 h-6 lg:w-8 lg:h-8 text-white" />
                   </div>
-                  <input 
-                    ref={searchInputRef}
-                    autoFocus
-                    type="text" 
-                    placeholder="¿QUÉ ESTÁS BUSCANDO?" 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 bg-transparent border-none text-4xl lg:text-7xl font-black uppercase tracking-tighter italic text-zinc-900 dark:text-white placeholder:text-zinc-100 dark:placeholder:text-zinc-900 outline-none"
-                  />
+                  <div className="flex-1 relative">
+                    <input 
+                      ref={searchInputRef}
+                      autoFocus
+                      type="text" 
+                      placeholder="Buscar productos..." 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-transparent border-2 border-zinc-100 dark:border-zinc-800 rounded-2xl text-xl lg:text-3xl font-bold uppercase tracking-tight text-zinc-900 dark:text-white placeholder:text-zinc-300 dark:placeholder:text-zinc-600 outline-none px-6 py-4 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+                    />
+                    {searchQuery && (
+                      <button 
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                   <button 
                     onClick={() => setIsSearchOpen(false)}
-                    className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-900 dark:text-white hover:bg-primary hover:text-white transition-all hover:rotate-90"
+                    className="w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-primary transition-all"
                   >
-                    <X className="w-8 h-8" />
+                    <X className="w-6 h-6" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-20">
-                  <div className="lg:col-span-1 space-y-12">
-                    <div className="space-y-6">
-                      <h4 className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.4em] flex items-center gap-3">
-                        <TrendingUp className="w-4 h-4" /> Tendencias
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-10">
+                  <div className="lg:col-span-1 space-y-6">
+                    <div className="space-y-3">
+                      <h4 className="text-zinc-400 text-[10px] font-bold uppercase tracking-[0.3em] flex items-center gap-2">
+                        <TrendingUp className="w-3 h-3" /> Populares
                       </h4>
-                      <div className="flex flex-wrap gap-3">
-                        {['Zapatillas Pro', 'Jeans Slim', 'Accesorios Cuero', 'Edición Limitada', 'Ofertas'].map(tag => (
-                          <button key={tag} className="px-6 py-3 bg-zinc-50 dark:bg-zinc-900 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:bg-primary hover:text-white transition-all">
+                      <div className="flex flex-wrap gap-2">
+                        {['Zapatillas', 'Jeans', 'Camisas', 'Accesorios', 'Ofertas'].map(tag => (
+                          <button 
+                            key={tag} 
+                            onClick={() => setSearchQuery(tag)}
+                            className="px-4 py-2 bg-zinc-50 dark:bg-zinc-900 rounded-xl text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 hover:bg-primary hover:text-white hover:scale-105 transition-all"
+                          >
                             {tag}
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    <div className="space-y-6">
-                      <h4 className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.4em] flex items-center gap-3">
-                        <Clock className="w-4 h-4" /> Recientes
+                    <div className="space-y-3">
+                      <h4 className="text-zinc-400 text-[10px] font-bold uppercase tracking-[0.3em] flex items-center gap-2">
+                        <Clock className="w-3 h-3" /> Recientes
                       </h4>
-                      <div className="space-y-4">
-                        {['Zapatillas Dark', 'Gafas de Sol'].map(item => (
-                          <div key={item} className="flex items-center justify-between group cursor-pointer p-4 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-                            <span className="text-sm font-black uppercase tracking-tight text-zinc-900 dark:text-white group-hover:text-primary transition-colors">{item}</span>
-                            <X className="w-4 h-4 text-zinc-300 hover:text-red-500" />
+                      <div className="space-y-2">
+                        {['Zapatillas Pro', 'Gafas de Sol'].map(item => (
+                          <div 
+                            key={item} 
+                            onClick={() => setSearchQuery(item)}
+                            className="flex items-center justify-between group cursor-pointer p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+                          >
+                            <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-primary transition-colors">{item}</span>
+                            <ArrowRight className="w-4 h-4 text-zinc-300 group-hover:text-primary transition-colors" />
                           </div>
                         ))}
                       </div>
                     </div>
+
+                    <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                      <button 
+                        onClick={() => {
+                          navigate('/products');
+                          setIsSearchOpen(false);
+                        }}
+                        className="w-full py-3 bg-gradient-to-r from-primary to-orange-500 rounded-xl text-white text-xs font-bold uppercase tracking-wider hover:shadow-lg hover:shadow-primary/30 transition-all flex items-center justify-center gap-2"
+                      >
+                        Ver todos los productos
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="lg:col-span-2 space-y-8">
-                    <h4 className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.4em]">Resultados Sugeridos</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="lg:col-span-3 space-y-4">
+                    {searchQuery.length > 0 && (
+                      <div className="flex items-center gap-2 text-xs text-zinc-400 font-medium uppercase tracking-wider">
+                        <span>{searchResults.length} resultado{searchResults.length !== 1 ? 's' : ''}</span>
+                        <span className="w-1 h-1 rounded-full bg-zinc-300" />
+                        <span>presiona Enter para ver todos</span>
+                      </div>
+                    )}
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 lg:gap-4">
                       {searchResults.length > 0 ? (
-                        searchResults.map(prod => (
+                        searchResults.slice(0, 6).map(prod => (
                           <Link 
                             key={prod.id} 
                             to={`/product/${prod.id}`}
                             onClick={() => setIsSearchOpen(false)}
-                            className="flex items-center gap-6 p-4 rounded-3xl bg-zinc-50 dark:bg-zinc-900 group cursor-pointer border border-transparent hover:border-primary transition-all"
+                            className="group relative bg-white dark:bg-zinc-900 rounded-2xl p-3 shadow-sm border border-transparent hover:border-primary hover:shadow-lg hover:shadow-primary/10 transition-all duration-300"
                           >
-                            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-white dark:bg-zinc-800 shrink-0">
-                              <img src={prod.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={prod.name} referrerPolicy="no-referrer" />
+                            <div className="aspect-square rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 mb-3">
+                              <img src={prod.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={prod.name} referrerPolicy="no-referrer" />
                             </div>
                             <div>
-                              <p className="text-primary text-[10px] font-black uppercase tracking-widest mb-1">{prod.category}</p>
-                              <h5 className="text-lg font-black text-zinc-900 dark:text-white uppercase tracking-tight leading-none italic">{prod.name}</h5>
-                              <p className="text-zinc-900 dark:text-white font-black mt-2 tracking-tighter">${prod.price.toFixed(2)}</p>
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1">{prod.category}</p>
+                              <h5 className="text-sm font-bold text-zinc-900 dark:text-white leading-tight line-clamp-2">{prod.name}</h5>
+                              <p className="text-sm font-bold text-zinc-900 dark:text-white mt-1">${formatCOP(prod.price)}</p>
                             </div>
+                            {prod.originalPrice && prod.originalPrice > prod.price && (
+                              <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full">
+                                -{Math.round((1 - prod.price / prod.originalPrice) * 100)}%
+                              </span>
+                            )}
                           </Link>
                         ))
                       ) : searchQuery.length > 1 ? (
-                        <div className="col-span-2 py-20 text-center">
-                          <p className="text-zinc-400 text-xl font-black uppercase italic">No se encontraron productos para "{searchQuery}"</p>
+                        <div className="col-span-2 md:col-span-3 py-12 text-center">
+                          <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center mx-auto mb-4">
+                            <Search className="w-8 h-8 text-zinc-300" />
+                          </div>
+                          <p className="text-zinc-400 font-bold">No se encontraron resultados para "{searchQuery}"</p>
+                          <button 
+                            onClick={() => {
+                              navigate('/products');
+                              setIsSearchOpen(false);
+                            }}
+                            className="mt-4 text-primary font-bold text-sm uppercase tracking-wider hover:underline"
+                          >
+                            Ver todos los productos
+                          </button>
                         </div>
                       ) : (
-                        <div className="col-span-2 py-20 text-center border-2 border-dashed border-zinc-100 dark:border-zinc-800 rounded-[3rem]">
-                          <p className="text-zinc-300 dark:text-zinc-700 text-xl font-black uppercase italic">Escribe algo para ver sugerencias...</p>
+                        <div className="col-span-2 md:col-span-3 py-12 text-center border-2 border-dashed border-zinc-100 dark:border-zinc-800 rounded-2xl">
+                          <Sparkles className="w-8 h-8 text-zinc-200 dark:text-zinc-700 mx-auto mb-3" />
+                          <p className="text-zinc-300 dark:text-zinc-600 font-bold">Escribe para buscar productos</p>
                         </div>
                       )}
                     </div>
+
+                    {searchResults.length > 6 && (
+                      <div className="text-center pt-4">
+                        <button 
+                          onClick={() => {
+                            navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
+                            setIsSearchOpen(false);
+                          }}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-full text-sm font-bold uppercase tracking-wider hover:bg-primary transition-all"
+                        >
+                          Ver todos los {searchResults.length} resultados
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -432,12 +491,12 @@ export const Header = () => {
                   onClick={toggleTheme}
                   className="flex-1 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-4 text-xs font-black uppercase tracking-widest text-zinc-900 dark:text-white"
                 >
-                  {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                  {headerIcons.themeIcon?.startsWith('custom_') ? (
+                    <img src={customIcons.themeIcon} alt="Theme" className="w-5 h-5 object-contain" />
+                  ) : (
+                    React.createElement(ICON_MAP[headerIcons.themeIcon] || Moon, { className: "w-5 h-5" })
+                  )}
                   Modo {theme === 'light' ? 'Noche' : 'Día'}
-                </button>
-                <button className="flex-1 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-4 text-xs font-black uppercase tracking-widest text-zinc-900 dark:text-white">
-                  <User className="w-5 h-5" />
-                  Perfil
                 </button>
               </div>
               <p className="text-center text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">JEANCOL © 2024</p>
