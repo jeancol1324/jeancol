@@ -332,10 +332,11 @@ CREATE POLICY "Admin can manage settings" ON settings FOR ALL USING (
 );
 
 -- Profiles: permitir todo (temporal para que funcione)
-ALTER TABLE profiles DROP POLICY IF EXISTS "Allow public read profiles" ON profiles;
-ALTER TABLE profiles DROP POLICY IF EXISTS "Allow authenticated insert profiles" ON profiles;
-ALTER TABLE profiles DROP POLICY IF EXISTS "Allow authenticated update profiles" ON profiles;
-ALTER TABLE profiles DROP POLICY IF EXISTS "Admin can manage profiles" ON profiles;
+DROP POLICY IF EXISTS "Allow public read profiles" ON profiles;
+DROP POLICY IF EXISTS "Allow authenticated insert profiles" ON profiles;
+DROP POLICY IF EXISTS "Allow authenticated update profiles" ON profiles;
+DROP POLICY IF EXISTS "Admin can manage profiles" ON profiles;
+DROP POLICY IF EXISTS "profiles_all" ON profiles;
 
 CREATE POLICY "profiles_all" ON profiles FOR ALL USING (true) WITH CHECK (true);
 
