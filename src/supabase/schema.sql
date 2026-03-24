@@ -331,9 +331,6 @@ CREATE POLICY "Admin can manage settings" ON settings FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
 );
 
--- Profiles: permitir todo (temporal)
-CREATE POLICY "profiles_all" ON profiles FOR ALL USING (true) WITH CHECK (true);
-
 -- ============================================
 -- FUNCIÓN PARA CREAR PROFILE AL REGISTRARSE
 -- ============================================
