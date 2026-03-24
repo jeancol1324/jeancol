@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Instagram, Twitter, Facebook, Youtube, Heart, Phone, Mail, MapPin, Send, MessageCircle, Music } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Instagram, Twitter, Facebook, Youtube, Heart, Phone, Mail, MapPin, Send, MessageCircle, Music, X, ShieldCheck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -51,6 +51,10 @@ export const Footer = () => {
   const navigate = useNavigate();
   const [heartClicks, setHeartClicks] = useState(0);
   const [showSecretHint, setShowSecretHint] = useState(false);
+  const [showCodeVerification, setShowCodeVerification] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [codeError, setCodeError] = useState(false);
+  const SECRET_CODE = '5742070';
 
   const getFooterSettings = () => {
     const saved = localStorage.getItem('footerSettings');
@@ -374,7 +378,7 @@ const textStyles: Record<string, { main: string; muted: string; border: string; 
                     const newClicks = heartClicks + 1;
                     setHeartClicks(newClicks);
                     if (newClicks >= 5) {
-                      navigate('/admin/login');
+                      setShowCodeVerification(true);
                       setHeartClicks(0);
                     } else {
                       setShowSecretHint(true);
@@ -399,6 +403,102 @@ const textStyles: Record<string, { main: string; muted: string; border: string; 
 
       {/* Decorative Bottom Gradient */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-zinc-950 to-transparent pointer-events-none" />
+
+      {/* Secret Code Verification Modal */}
+      <AnimatePresence>
+        {showCodeVerification && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            onClick={() => {
+              setShowCodeVerification(false);
+              setCodeInput('');
+              setCodeError(false);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-3xl p-8 max-w-md w-full shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ShieldCheck className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                  Acceso Restringido
+                </h3>
+                <p className="text-zinc-400 text-sm mt-2">
+                  Ingresa el código de seguridad para continuar
+                </p>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (codeInput === SECRET_CODE) {
+                    setShowCodeVerification(false);
+                    setCodeInput('');
+                    setCodeError(false);
+                    navigate('/admin/login');
+                  } else {
+                    setCodeError(true);
+                    setCodeInput('');
+                  }
+                }}
+                className="space-y-4"
+              >
+                <input
+                  type="text"
+                  value={codeInput}
+                  onChange={(e) => {
+                    setCodeInput(e.target.value);
+                    setCodeError(false);
+                  }}
+                  placeholder="Código de seguridad"
+                  className={`w-full px-6 py-4 bg-zinc-800 border ${codeError ? 'border-red-500' : 'border-zinc-700'} rounded-xl text-white text-center text-2xl font-mono tracking-[0.5em] placeholder:text-zinc-600 focus:outline-none focus:border-primary transition-colors`}
+                  maxLength={7}
+                  autoFocus
+                />
+
+                {codeError && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-red-400 text-sm text-center"
+                  >
+                    Código incorrecto. Intenta de nuevo.
+                  </motion.p>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCodeVerification(false);
+                      setCodeInput('');
+                      setCodeError(false);
+                    }}
+                    className="flex-1 py-3 bg-zinc-800 text-zinc-300 font-bold rounded-xl hover:bg-zinc-700 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors"
+                  >
+                    Verificar
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </footer>
   );
 };
