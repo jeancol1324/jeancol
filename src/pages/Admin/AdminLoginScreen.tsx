@@ -1,44 +1,31 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-
-const ADMIN_USERS = [
-  { username: 'admin', password: 'jeancol2024' },
-  { username: 'jeancol', password: 'tienda2024' },
-];
+import { useAuth } from '../../context/AuthContext';
 
 export const AdminLoginScreen = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const { signIn } = useAuth();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const getUserDataKey = (key: string) => `user_${username.toLowerCase()}_${key}`;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const user = ADMIN_USERS.find(
-      u => u.username.toLowerCase() === username.toLowerCase() && u.password === password
-    );
-
-    if (user) {
-      localStorage.setItem('adminAuthenticated', 'true');
-      localStorage.setItem('adminUsername', username.toLowerCase());
-      localStorage.setItem('isFirstLogin', 'true');
-      navigate('/admin');
-    } else {
-      setError('Usuario o contraseña incorrectos');
-    }
+    const result = await signIn(email, password);
     
-    setIsLoading(false);
+    if (result.error) {
+      setError(result.error);
+      setIsLoading(false);
+    } else {
+      navigate('/admin');
+    }
   };
 
   return (
@@ -67,16 +54,16 @@ export const AdminLoginScreen = () => {
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                Usuario
+                Email
               </label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                 <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-12 pr-4 py-4 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                  placeholder="admin"
+                  placeholder="admin@jeancol.com"
                   required
                 />
               </div>

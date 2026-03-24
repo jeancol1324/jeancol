@@ -1,8 +1,8 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { Skeleton } from './components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from './context/AuthContext';
 
 // Lazy load pages
 const HomeScreen = lazy(() => import('./pages/HomeScreen').then(m => ({ default: m.HomeScreen })));
@@ -31,15 +31,9 @@ const AdminHomeEditorScreen = lazy(() => import('./pages/Admin/AdminHomeEditorSc
 const AdminLoginScreen = lazy(() => import('./pages/Admin/AdminLoginScreen').then(m => ({ default: m.AdminLoginScreen })));
 
 const AdminProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const navigate = useNavigate();
+  const { isAdmin, isLoading, user } = useAuth();
 
-  useEffect(() => {
-    const auth = localStorage.getItem('adminAuthenticated');
-    setIsAuthenticated(auth === 'true');
-  }, []);
-
-  if (isAuthenticated === null) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-950">
         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -47,7 +41,7 @@ const AdminProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAdmin || !user) {
     return <Navigate to="/admin/login" replace />;
   }
 

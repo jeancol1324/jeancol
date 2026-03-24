@@ -1,15 +1,16 @@
 import React, { useEffect } from 'react';
-import { Settings, Home as HomeIcon } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Router } from './Router';
 import { usePageLoading } from './hooks/usePageLoading';
 import { useStore } from './context/StoreContext';
+import { useAuth } from './context/AuthContext';
 import { MaintenanceScreen } from './pages/MaintenanceScreen';
 
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isMaintenanceMode } = useStore();
+  const { isAdmin, isLoading, signOut } = useAuth();
   const isAdminMode = location.pathname.startsWith('/admin');
   const isMaintenance = isMaintenanceMode() && !isAdminMode;
   usePageLoading();
@@ -29,6 +30,10 @@ export default function App() {
     }
   }, [location.pathname]);
 
+  if (isLoading) {
+    return null;
+  }
+
   if (isMaintenance) {
     return (
       <>
@@ -39,21 +44,6 @@ export default function App() {
 
   return (
     <>
-      <button 
-        onClick={() => {
-          const isAuth = localStorage.getItem('adminAuthenticated') === 'true';
-          if (isAdminMode) {
-            navigate('/');
-          } else {
-            navigate(isAuth ? '/admin' : '/admin/login');
-          }
-        }}
-        className="fixed top-4 right-4 z-[100] bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 p-3 rounded-xl shadow-lg hover:scale-105 transition-all flex items-center gap-2 text-xs font-black uppercase tracking-widest"
-      >
-        {isAdminMode ? <HomeIcon className="w-4 h-4 text-primary" /> : <Settings className="w-4 h-4 text-primary" />}
-        <span className="hidden sm:inline">{isAdminMode ? 'Tienda' : 'Admin'}</span>
-      </button>
-
       <Router />
     </>
   );

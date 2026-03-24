@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Instagram, Twitter, Facebook, Youtube, Heart, Phone, Mail, MapPin, Send, MessageCircle, Music } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
@@ -48,6 +48,9 @@ export const Footer = () => {
   const storeName = getStoreName();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const navigate = useNavigate();
+  const [heartClicks, setHeartClicks] = useState(0);
+  const [showSecretHint, setShowSecretHint] = useState(false);
 
   const getFooterSettings = () => {
     const saved = localStorage.getItem('footerSettings');
@@ -365,7 +368,29 @@ const textStyles: Record<string, { main: string; muted: string; border: string; 
                 transition={{ delay: 0.7 }}
                 className={`flex items-center gap-2 text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}
               >
-                Hecho con <Heart className="w-3 h-3 text-red-500 animate-pulse" /> en Colombia
+                Hecho con{' '}
+                <button
+                  onClick={() => {
+                    const newClicks = heartClicks + 1;
+                    setHeartClicks(newClicks);
+                    if (newClicks >= 5) {
+                      navigate('/admin/login');
+                      setHeartClicks(0);
+                    } else {
+                      setShowSecretHint(true);
+                      setTimeout(() => setShowSecretHint(false), 1500);
+                    }
+                  }}
+                  className="relative cursor-pointer hover:scale-110 transition-transform"
+                >
+                  <Heart className="w-3 h-3 text-red-500 animate-pulse" />
+                  {showSecretHint && (
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[8px] text-primary font-bold">
+                      {5 - heartClicks}...
+                    </span>
+                  )}
+                </button>{' '}
+                en Colombia
               </motion.div>
             </div>
           </motion.div>

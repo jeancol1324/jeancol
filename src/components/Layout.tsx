@@ -8,6 +8,7 @@ import { ScrollProgress } from './ScrollProgress';
 import { SideCart } from './SideCart';
 import { FloatingNotifications } from './FloatingNotifications';
 import { WhatsAppFloat } from './WhatsAppFloat';
+import { FloatingAdminButton } from './FloatingAdminButton';
 import { useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
@@ -118,6 +119,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       {!isAdminPath && <WhatsAppFloat />}
       <FloatingNotifications />
       <ScrollToTop />
+      <FloatingAdminButton />
     </div>
   );
 };

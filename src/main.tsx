@@ -6,6 +6,7 @@ import App from './App.tsx';
 import './index.css';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
+import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { CategoryProvider } from './context/CategoryContext';
 import { ProductProvider } from './context/ProductContext';
@@ -22,21 +23,23 @@ createRoot(document.getElementById('root')!).render(
         <ThemeProvider>
           <StoreProvider>
             <LoadingProvider>
-              <CartProvider>
-                <ToastProvider>
-                  <ProductProvider>
-                    <CategoryProvider>
-                      <OrderProvider>
-                        <ReviewProvider>
-                          <CouponProvider>
-                            <App />
-                          </CouponProvider>
-                        </ReviewProvider>
-                      </OrderProvider>
-                    </CategoryProvider>
-                  </ProductProvider>
-                </ToastProvider>
-              </CartProvider>
+              <AuthProvider>
+                <CartProvider>
+                  <ToastProvider>
+                    <ProductProvider>
+                      <CategoryProvider>
+                        <OrderProvider>
+                          <ReviewProvider>
+                            <CouponProvider>
+                              <App />
+                            </CouponProvider>
+                          </ReviewProvider>
+                        </OrderProvider>
+                      </CategoryProvider>
+                    </ProductProvider>
+                  </ToastProvider>
+                </CartProvider>
+              </AuthProvider>
             </LoadingProvider>
           </StoreProvider>
         </ThemeProvider>
