@@ -335,7 +335,9 @@ export const HomeScreen = () => {
   };
   
   const randomProducts = useMemo(() => {
-    return [...allProducts].sort(() => Math.random() - 0.5);
+    return [...allProducts]
+      .filter(p => (p.stock || 0) > 0)
+      .sort(() => Math.random() - 0.5);
   }, [allProducts]);
   
   const homeBanners = JSON.parse(localStorage.getItem('homeBanners') || 'null') || [
