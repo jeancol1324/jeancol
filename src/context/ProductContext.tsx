@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { PRODUCTS as INITIAL_PRODUCTS } from '../constants';
 import { Product } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -38,12 +37,9 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
             colors: p.colors || {},
             variations: p.variations || [],
           })));
-        } else {
-          setProducts(INITIAL_PRODUCTS);
         }
       } catch (error) {
         console.error('Error fetching products:', error);
-        setProducts(INITIAL_PRODUCTS);
       } finally {
         setLoading(false);
       }
