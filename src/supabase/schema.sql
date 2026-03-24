@@ -331,13 +331,7 @@ CREATE POLICY "Admin can manage settings" ON settings FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
 );
 
--- Profiles: permitir todo (temporal para que funcione)
-DROP POLICY IF EXISTS "Allow public read profiles" ON profiles;
-DROP POLICY IF EXISTS "Allow authenticated insert profiles" ON profiles;
-DROP POLICY IF EXISTS "Allow authenticated update profiles" ON profiles;
-DROP POLICY IF EXISTS "Admin can manage profiles" ON profiles;
-DROP POLICY IF EXISTS "profiles_all" ON profiles;
-
+-- Profiles: permitir todo (temporal)
 CREATE POLICY "profiles_all" ON profiles FOR ALL USING (true) WITH CHECK (true);
 
 -- ============================================
