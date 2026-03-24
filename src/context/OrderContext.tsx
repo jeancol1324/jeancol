@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Order, OrderStatus } from '../types';
-import { ORDERS as INITIAL_ORDERS } from '../constants';
 import { supabase } from '../lib/supabase';
 
 export type { Order, OrderStatus };
@@ -44,12 +43,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (error) throw error;
         if (data && data.length > 0) {
           setOrders(data);
-        } else {
-          setOrders(INITIAL_ORDERS);
         }
       } catch (error) {
         console.error('Error fetching orders:', error);
-        setOrders(INITIAL_ORDERS);
       } finally {
         setLoading(false);
       }
